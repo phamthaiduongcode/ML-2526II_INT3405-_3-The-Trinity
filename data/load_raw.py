@@ -8,10 +8,10 @@ def download_and_setup_deap():
     download_path = kagglehub.dataset_download("manh123df/deap-dataset")
     print(f"Đã tải về cache tại: {download_path}")
 
-    # 2. Xác định thư mục đích (data/deap)
-    # File này nằm trong data/, nên thư mục con sẽ là data/deap
+    # 2. Xác định thư mục đích (data/raw)
+    # File này nằm trong data/, nên thư mục con sẽ là data/raw
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    target_dir = os.path.join(current_dir, "deap")
+    target_dir = os.path.join(current_dir, "raw")
     
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)

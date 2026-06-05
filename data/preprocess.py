@@ -82,7 +82,7 @@ def get_dynamic_class_weights(y_train_fold):
 if __name__ == "__main__":
     # Tự động trỏ đến đúng thư mục chứa script này
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_DIR = os.path.join(BASE_DIR, "deap")
+    DATA_DIR = os.path.join(BASE_DIR, "raw")
     OUTPUT_DIR = os.path.join(BASE_DIR, "processed")
     
     os.makedirs(OUTPUT_DIR, exist_ok=True)

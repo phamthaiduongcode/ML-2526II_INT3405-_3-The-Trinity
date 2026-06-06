@@ -220,3 +220,4 @@ __marimo__/
 # Data files - Ignore DEAP dataset and processed files
 data/deap/
 *.dat
+data/deap.rar

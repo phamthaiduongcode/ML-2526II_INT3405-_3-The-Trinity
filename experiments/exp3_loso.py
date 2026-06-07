@@ -19,6 +19,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
+from src.utils.dataset import set_seed
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
@@ -79,6 +80,7 @@ def plot_cm(y_true, y_pred, subject_idx, target_name):
 # ══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+    set_seed(42)  # BẮT BUỘC GỌI CÁI NÀY ĐỂ KHOÁ RANDOM
     print(f"🖥️  Device: {DEVICE}")
     X              = np.load(os.path.join(DATA_DIR, 'X_epochs.npy'))
     y_val          = np.load(os.path.join(DATA_DIR, 'y_valence.npy'))

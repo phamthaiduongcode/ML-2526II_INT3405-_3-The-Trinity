@@ -29,8 +29,9 @@ from src.data_pipeline.preprocess import normalize_after_split
 # ── ĐƯỜNG DẪN ──
 DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DATA_DIR = os.path.join(ROOT_DIR, "data", "processed")
-CKPT_DIR = os.path.join(ROOT_DIR, "result", "checkpoints")
-PLOT_DIR = os.path.join(ROOT_DIR, "result", "plots")
+MODEL_NAME = "bilstm"
+CKPT_DIR   = os.path.join(ROOT_DIR, "result", MODEL_NAME, "checkpoints")
+PLOT_DIR   = os.path.join(ROOT_DIR, "result", MODEL_NAME, "plots")
 os.makedirs(PLOT_DIR, exist_ok=True)
 
 N_SAMPLES = 3000

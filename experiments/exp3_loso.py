@@ -31,8 +31,9 @@ from src.models.eeg_bilstm import BiLSTM_Model
 
 # ── ĐƯỜNG DẪN ──
 DATA_DIR = os.path.join(ROOT_DIR, "data", "processed")
-LOG_DIR  = os.path.join(ROOT_DIR, "result", "logs")
-PLOT_DIR = os.path.join(ROOT_DIR, "result", "plots")
+MODEL_NAME = "bilstm" 
+LOG_DIR    = os.path.join(ROOT_DIR, "result", MODEL_NAME, "logs")
+PLOT_DIR   = os.path.join(ROOT_DIR, "result", MODEL_NAME, "plots")
 
 for d in [LOG_DIR, PLOT_DIR]:
     os.makedirs(d, exist_ok=True)

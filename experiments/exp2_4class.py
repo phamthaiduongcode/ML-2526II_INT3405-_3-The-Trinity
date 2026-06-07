@@ -32,9 +32,9 @@ from src.data_pipeline.preprocess import normalize_after_split, get_dynamic_clas
 # ── ĐƯỜNG DẪN ──
 DEVICE   = "cuda" if torch.cuda.is_available() else "cpu"
 DATA_DIR = os.path.join(ROOT_DIR, "data", "processed")
-LOG_DIR  = os.path.join(ROOT_DIR, "result", "logs")
-PLOT_DIR = os.path.join(ROOT_DIR, "result", "plots")
-
+MODEL_NAME = "bilstm" 
+LOG_DIR    = os.path.join(ROOT_DIR, "result", MODEL_NAME, "logs")
+PLOT_DIR   = os.path.join(ROOT_DIR, "result", MODEL_NAME, "plots")
 for d in [LOG_DIR, PLOT_DIR]:
     os.makedirs(d, exist_ok=True)
 

@@ -39,8 +39,16 @@ def get_dataloaders(X_train_scaled, X_test_scaled, y_train, y_test, batch_size=6
     """
     train_dataset = EEGDataset(X_train_scaled, y_train)
     test_dataset = EEGDataset(X_test_scaled, y_test)
-    
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=False)
-    
+
+    # pin_memory=True tăng tốc transfer CPU→GPU, num_workers>0 load data song song
+    pin = torch.cuda.is_available()
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True,
+        drop_last=False, num_workers=2, pin_memory=pin
+    )
+    test_loader = DataLoader(
+        test_dataset, batch_size=batch_size, shuffle=False,
+        drop_last=False, num_workers=2, pin_memory=pin
+    )
+
     return train_loader, test_loader

@@ -220,3 +220,6 @@ __marimo__/
 # Data files - Ignore DEAP dataset and processed files
 data/deap/
 *.dat
+*.npy
+test_labels.py
+repomix-output.xml

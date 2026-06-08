@@ -121,10 +121,6 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
-# Bỏ qua kết quả chạy (Weights, Logs, Ảnh)
-result/checkpoints/*
-result/logs/*
-result/plots/*
 !result/checkpoints/.gitkeep
 !result/logs/.gitkeep
 !result/plots/.gitkeep
@@ -134,5 +130,4 @@ __pycache__/
 *.pyc
 .vscode/
 .DS_Store
-result/
 repomix-output.xml

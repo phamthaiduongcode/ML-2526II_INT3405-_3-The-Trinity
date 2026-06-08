@@ -25,10 +25,10 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from models.cnn import EEGNet2D
-from data.preprocess import normalize_after_split, get_dynamic_class_weights
-from utils.dataset import set_seed, EEGDataset, get_dataloaders
-from utils.metrics import evaluate_metrics, plot_confusion_matrix, plot_learning_curves
+from src.models.cnn import EEGNet2D
+from src.data_pipeline.preprocess import normalize_after_split, get_dynamic_class_weights
+from src.utils.dataset import set_seed, EEGDataset, get_dataloaders
+from src.utils.metrics import evaluate_metrics, plot_confusion_matrix, plot_learning_curves
 
 
 # ==============================================================================

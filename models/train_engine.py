@@ -18,7 +18,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut
 
 # ── Thêm project root vào sys.path để import nội bộ ─────────────────────────
@@ -50,6 +49,111 @@ CLASS_NAMES = {
     # 2: HighV-LowA (V=1,A=0), 3: HighV-HighA (V=1,A=1)
     "4class": ["LowV-LowA", "LowV-HighA", "HighV-LowA", "HighV-HighA"],
 }
+
+
+# ==============================================================================
+# ADAPTIVE LR SCHEDULER — Tự động điều chỉnh LR dựa trên Val F1
+# ==============================================================================
+class AdaptiveLRScheduler:
+    """
+    Adaptive Learning Rate Scheduler dựa trên xu hướng Val F1-macro.
+
+    Rules:
+        1. Val F1 không tăng >= patience epoch → LR × decay_factor (0.5)
+        2. Val F1 tụt liên tục >= drop_patience epoch → LR × boost_factor (1.1)
+           (thử thoát local minimum)
+        3. Val F1 tăng đều → giữ nguyên LR
+
+    Args:
+        optimizer: Torch optimizer
+        patience (int): Số epoch chờ trước khi giảm LR (rule 1). Default: 5
+        decay_factor (float): Hệ số giảm LR khi plateau. Default: 0.5
+        drop_patience (int): Số epoch F1 tụt liên tục trước khi boost LR. Default: 3
+        boost_factor (float): Hệ số tăng LR khi tụt liên tục. Default: 1.1
+        min_lr (float): LR tối thiểu, không giảm dưới mức này. Default: 1e-6
+        max_lr (float): LR tối đa, không tăng vượt mức này. Default: 1e-2
+        min_delta (float): Ngưỡng cải thiện tối thiểu để coi là "tăng". Default: 1e-4
+    """
+
+    def __init__(self, optimizer, patience=5, decay_factor=0.5,
+                 drop_patience=3, boost_factor=1.1,
+                 min_lr=1e-6, max_lr=1e-2, min_delta=1e-4):
+        self.optimizer = optimizer
+        self.patience = patience
+        self.decay_factor = decay_factor
+        self.drop_patience = drop_patience
+        self.boost_factor = boost_factor
+        self.min_lr = min_lr
+        self.max_lr = max_lr
+        self.min_delta = min_delta
+
+        # Internal state
+        self.best_f1 = -1.0
+        self.epochs_no_improve = 0   # Đếm epoch không cải thiện (rule 1)
+        self.consecutive_drops = 0   # Đếm epoch F1 tụt liên tục (rule 2)
+        self.prev_f1 = -1.0
+        self.history = []            # Lịch sử LR để debug
+
+    def step(self, val_f1):
+        """
+        Gọi sau mỗi epoch với val_f1 hiện tại.
+        Returns:
+            str: Mô tả action đã thực hiện ('decay', 'boost', 'hold')
+        """
+        current_lr = self.optimizer.param_groups[0]['lr']
+        action = 'hold'
+
+        # --- Kiểm tra xu hướng ---
+        f1_improved = val_f1 >= self.best_f1 + self.min_delta
+        f1_dropped = val_f1 < self.prev_f1 - self.min_delta
+
+        if f1_improved:
+            # Rule 3: F1 tăng → giữ nguyên, reset counters
+            self.best_f1 = val_f1
+            self.epochs_no_improve = 0
+            self.consecutive_drops = 0
+            action = 'hold'
+        else:
+            # F1 không cải thiện so với best
+            self.epochs_no_improve += 1
+
+            if f1_dropped:
+                # F1 tụt so với epoch trước
+                self.consecutive_drops += 1
+            else:
+                # F1 không tụt (chỉ đứng yên) → reset drop counter
+                self.consecutive_drops = 0
+
+            # Rule 2: F1 tụt liên tục → boost LR để thoát local minimum
+            #         (ưu tiên rule 2 trước rule 1)
+            if self.consecutive_drops >= self.drop_patience:
+                new_lr = min(current_lr * self.boost_factor, self.max_lr)
+                if new_lr != current_lr:
+                    for pg in self.optimizer.param_groups:
+                        pg['lr'] = new_lr
+                    action = 'boost'
+                self.consecutive_drops = 0  # Reset sau khi boost
+
+            # Rule 1: F1 không tăng đủ lâu → giảm LR
+            elif self.epochs_no_improve >= self.patience:
+                new_lr = max(current_lr * self.decay_factor, self.min_lr)
+                if new_lr != current_lr:
+                    for pg in self.optimizer.param_groups:
+                        pg['lr'] = new_lr
+                    action = 'decay'
+                self.epochs_no_improve = 0  # Reset sau khi giảm
+
+        self.prev_f1 = val_f1
+        new_lr = self.optimizer.param_groups[0]['lr']
+        self.history.append({
+            'val_f1': val_f1, 'lr': new_lr, 'action': action
+        })
+
+        return action
+
+    def get_last_lr(self):
+        """Trả về LR hiện tại (tương thích API)."""
+        return [pg['lr'] for pg in self.optimizer.param_groups]
 
 
 # ==============================================================================
@@ -150,7 +254,7 @@ def run_experiment(config: dict):
             - label        (str): "valence", "arousal", hoặc "4class"
             - cv           (str): "stratified_kfold" hoặc "leave_one_group_out"
             - n_splits     (int): Số folds (chỉ dùng cho stratified_kfold)
-            - batch_size   (int): Batch size (default: 256)
+            - batch_size   (int): Batch size (default: 64)
             - num_epochs   (int): Số epoch tối đa (default: 50)
             - lr          (float): Learning rate (default: 1e-3)
             - weight_decay(float): L2 regularization (default: 1e-4)
@@ -269,9 +373,14 @@ def run_experiment(config: dict):
         # ── 5d. Model, Optimizer, Scheduler, Criterion ──────────────────────
         model = EEGNet2D(num_classes=num_classes).to(device)
         optimizer = Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-        scheduler = ReduceLROnPlateau(
-            optimizer, mode='max', patience=PATIENCE_LR,
-            factor=0.5, min_lr=1e-6
+        scheduler = AdaptiveLRScheduler(
+            optimizer,
+            patience=PATIENCE_LR,       # N epoch không tăng → LR × 0.5
+            decay_factor=0.5,
+            drop_patience=3,            # F1 tụt 3 epoch liên tục → LR × 1.1
+            boost_factor=1.1,
+            min_lr=1e-6,
+            max_lr=1e-2,
         )
         criterion = nn.CrossEntropyLoss(weight=class_weights)
 
@@ -301,8 +410,8 @@ def run_experiment(config: dict):
                 model, val_loader, criterion, device
             )
 
-            # --- Scheduler step (theo val F1-macro) ---
-            scheduler.step(val_metrics['f1_score'])
+            # --- Adaptive LR step (theo val F1-macro) ---
+            lr_action = scheduler.step(val_metrics['f1_score'])
 
             # --- Save learning curves ---
             hist_train_loss.append(train_loss)
@@ -321,9 +430,16 @@ def run_experiment(config: dict):
             else:
                 epochs_no_improve += 1
 
+            # --- Log LR action khi thay đổi ---
+            current_lr = optimizer.param_groups[0]['lr']
+            if lr_action != 'hold':
+                action_emoji = '📉' if lr_action == 'decay' else '📈'
+                print(
+                    f"   {action_emoji} Epoch {epoch + 1}: LR {lr_action} → {current_lr:.1e}"
+                )
+
             # --- Log mỗi 10 epoch hoặc epoch cuối ---
             if (epoch + 1) % 10 == 0 or epoch == NUM_EPOCHS - 1:
-                current_lr = optimizer.param_groups[0]['lr']
                 print(
                     f"   Epoch {epoch + 1:3d}/{NUM_EPOCHS}  |  "
                     f"Train Loss: {train_loss:.4f}  Acc: {train_metrics['accuracy']:.4f}  |  "
@@ -380,8 +496,8 @@ def run_experiment(config: dict):
                 'val_losses':   hist_val_loss,
                 'train_accs':   hist_train_acc,
                 'val_accs':     hist_val_acc,
-                'train_f1s':    hist_train_f1,   
-                'val_f1s':      hist_val_f1, 
+                'train_f1s':    hist_train_f1,   # dang thừa 
+                'val_f1s':      hist_val_f1,   # dang thừa 
             }
 
     # ══════════════════════════════════════════════════════════════════════════

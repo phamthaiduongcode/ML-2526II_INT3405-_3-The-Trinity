@@ -115,3 +115,24 @@ repomix-output.xml
 # ── OS ──
 .DS_Store
 Thumbs.db
+# Bỏ qua toàn bộ Data
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Bỏ qua kết quả chạy (Weights, Logs, Ảnh)
+result/checkpoints/*
+result/logs/*
+result/plots/*
+!result/checkpoints/.gitkeep
+!result/logs/.gitkeep
+!result/plots/.gitkeep
+
+# Rác của Python và VS Code
+__pycache__/
+*.pyc
+.vscode/
+.DS_Store
+result/
+repomix-output.xml

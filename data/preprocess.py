@@ -14,7 +14,7 @@ def verify_epoch_integrity(eeg_normalized, X):
     assert np.allclose(eeg_normalized[1, 0, :128], X[60, 0, :]), "❌ Ranh giới Trial 0->1 bị trộn!"
     assert np.allclose(eeg_normalized[0, 5, :128], X[0, 5, :]), "❌ Channel 5 bị trộn sang channel khác!"
 
-def preprocess_subject(file_path):
+def preprocess_subject(file_path, v_med=5.0, a_med=5.0):
     """Tiền xử lý toàn diện dữ liệu của 1 Subject."""
     with open(file_path, 'rb') as f:
         data = pickle.load(f, encoding='latin1')
@@ -23,8 +23,8 @@ def preprocess_subject(file_path):
     raw_labels = data['labels']       
     
     # 1. Binarize nhãn cảm xúc theo ngưỡng 5.0
-    y_valence = (raw_labels[:, 0] > 5.0).astype(int)
-    y_arousal = (raw_labels[:, 1] > 5.0).astype(int)
+    y_valence = (raw_labels[:, 0] >= v_med).astype(int)
+    y_arousal = (raw_labels[:, 1] >= a_med).astype(int)
     
     # 2. Baseline Subtraction
     baseline = raw_eeg[:, :, :384] 
@@ -95,13 +95,24 @@ if __name__ == "__main__":
     all_X, all_y_val, all_y_aro, all_groups = [], [], [], []
     processed_count = 0
     
+
+    import glob
+    print("TÍNH GLOBAL MEDIAN TỪ 32 NGƯỜI...")
+    files = glob.glob(os.path.join(DATA_DIR, "s*.dat"))
+    all_labels = [pickle.load(open(f, 'rb'), encoding='latin1')['labels'] for f in files]
+    all_labels = np.vstack(all_labels)
+    global_v_med = np.median(all_labels[:, 0])
+    global_a_med = np.median(all_labels[:, 1])
+    print(f"Global Median Valence: {global_v_med:.3f}, Arousal: {global_a_med:.3f}")
+    print("-" * 88)
+
     for sub_id in range(1, 33):
         file_path = os.path.join(DATA_DIR, f"s{sub_id:02d}.dat")
         if not os.path.exists(file_path):
             print(f"❌ Không tìm thấy {file_path}. Vui lòng chạy script tải dữ liệu trước!")
             continue
             
-        X_sub, y_val_sub, y_aro_sub, y_val_raw, y_aro_raw = preprocess_subject(file_path)
+        X_sub, y_val_sub, y_aro_sub, y_val_raw, y_aro_raw = preprocess_subject(file_path, global_v_med, global_a_med)
         
         v_trial = np.bincount(y_val_raw, minlength=2)
         v_epoch = np.bincount(y_val_sub, minlength=2)

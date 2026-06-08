@@ -794,3 +794,125 @@ A: ~87.53% với SVM linear trên 6 subjects. Với DEAP (32 subjects), accuracy
 ---
 
 *Tài liệu này được tạo cho dự án EmoWave — bài tập lớn môn Machine Learning.*
+
+---
+---
+
+# PHẦN 2: QUẢN LÝ DỰ ÁN & LOG THÍ NGHIỆM
+
+## 👥 Thông tin chung
+
+- **Dataset:** DEAP (Preprocessed) — 32 Subjects, 32 kênh EEG, 128Hz.
+- **Nhãn phân loại:** Valence & Arousal (Ngưỡng: **Global Median** — Valence: 3.08, Arousal: 3.315. `>= median` → High, `< median` → Low).
+- **Thành viên:**
+    - **TV1:** Feature Engineering + SVM (Machine Learning truyền thống)
+    - **TV2:** 1D-CNN (Deep Learning End-to-End)
+    - **TV3:** BiLSTM + DataLoaders + Metrics (Deep Learning chuỗi thời gian)
+
+---
+
+## ⚠️ QUY TẮC VÀNG (Bắt buộc tuân thủ)
+
+### Về Data & Metrics:
+- **Global Median Thresholding:** Dùng trung vị toàn cục (Valence median = 3.08, Arousal median = 3.315) thay vì ngưỡng cứng 5.0. Dấu `>=` median → High. Kết quả: phân bố 4-class cân bằng hơn (~30%/20%/20%/30%).
+- **Class Imbalance:** Một số subject có phân bố cực kỳ lệch (ví dụ S26 chỉ có 1 trial High Arousal).
+- **Metric quyết định:** Bắt buộc dùng **F1-score (Macro)**, tuyệt đối không nhìn vào Accuracy để kết luận mô hình ngon.
+- **Loại bỏ dải Delta:** Chỉ giữ 4 dải tần Theta (4–8Hz), Alpha (8–14Hz), Beta (14–31Hz), Gamma (31–50Hz). Dải Delta (0.5–4Hz) bị loại vì liên quan đến giấc ngủ, không mang tín hiệu cảm xúc.
+
+### Về Pipeline khi Train (Chống Data Leakage):
+- **SPLIT trước — NORMALIZE sau:** Gọi `normalize_after_split()` SAU KHI đã có `X_train`, `X_test`. (TV1 dùng `mode='flatten'`, TV2/TV3 dùng `mode='channel'`).
+- **LOSO (Exp 3):** Scaler **BẮT BUỘC** phải khởi tạo lại (`scaler = StandardScaler()`) trong mỗi vòng lặp LOSO. Không tái sử dụng scaler từ fold trước.
+- **Edge Case LOSO:** Các fold chứa subject chỉ có 1 class → model crash hoặc điểm ảo. Code đã có fallback weights nhưng **cần log rõ fold nào bị skip**.
+- **Class Weights:** Dynamic class weights phải tính lại mỗi fold dựa trên `y_train` của fold đó.
+- **LDS Smoothing (TV1):** Chỉ áp dụng trên 60 epochs của từng trial độc lập. Không smooth qua ranh giới trial hay subject.
+
+### Về Mô hình & Thí nghiệm:
+- **Deep Learning (TV2, TV3):** Không dùng `Softmax` ở cuối Model. Raw Logits → `nn.CrossEntropyLoss`.
+- **K-Fold (Exp 1 & 2):** Bắt buộc `StratifiedKFold`, không dùng `KFold` thông thường.
+- **Exp 2 (4-class):** Cần verify phân bố Q1–Q4 trước khi train.
+- **t-SNE:** Lấy output layer ngay trước Dense cuối, thống nhất giữa CNN và BiLSTM.
+
+---
+
+## 📦 GIAI ĐOẠN 0: TIỀN XỬ LÝ DỮ LIỆU ✅ HOÀN TẤT
+
+*Mã nguồn:* `data/preprocess.py`
+
+- **Baseline Subtraction:** Trừ 3 giây nhiễu nền đầu tiên (pre-trial baseline).
+- **Cắt Epoch:** 1 giây = 128 samples, không chồng lấp. Bọc `.copy()` chống lỗi trộn kênh.
+- **Global Median Thresholding:** Tính trung vị từ toàn bộ 32 người → chia nhãn cân bằng.
+- **Tối ưu RAM:** Ép `float32`, giải phóng bộ nhớ chủ động. 2.4GB → ~1.2GB.
+- **Output:**
+    - `X_epochs.npy`: Shape `(76800, 32, 128)`
+    - `y_valence.npy` & `y_arousal.npy`: Shape `(76800,)`
+    - `subject_groups.npy`: Shape `(76800,)` (ID 0–31)
+
+---
+
+## ✅ CHECKLIST TIẾN ĐỘ
+
+- [x] Chạy xong `data/preprocess.py` thu được 4 file `.npy`
+- [x] **TV1:** Hoàn tất SVM pipeline (`notebooks/svm_local.ipynb`) — Subject-Dependent ✅ + Subject-Independent ✅
+- [x] **TV1:** Áp dụng Golden Rules (F1-macro, loại Delta, zero_division=0)
+- [x] **TV1:** Chạy đủ 3 Experiments (Exp1 2-class, Exp2 4-class, Exp3 LOSO)
+
+---
+
+## 📋 TIẾN ĐỘ THEO NGÀY
+
+### Dương 5/6:
+- Viết load data, preprocess. CHÚ Ý ĐỌC EDA PROBLEMS.
+- Push các file `.npy` để dùng cho việc train.
+
+### Dương 6/6:
+- Refactor toàn bộ `svm_local.ipynb` từ load `.dat` sang load `.npy`.
+- Chạy Subject-Dependent thành công: 2class 87%, 4class 81%.
+- Áp dụng Golden Rules: F1-macro scoring, loại Delta band, zero_division=0.
+- Commit và push lên branch `dung666`.
+
+### Dương 7/6:
+- Cập nhật `preprocess.py`: đổi ngưỡng từ `> 5.0` cứng sang **Global Median** (`>= median`). Phân bố 4-class giờ cân bằng hơn.
+- Chạy Subject-Independent (LOSO) thành công cho cả 2class và 4class.
+- **Kết luận quan trọng:** SVM truyền thống không đủ sức cho bài toán LOSO (Subject-Independent). Đây là motivation chính để chuyển sang Deep Learning (CNN, BiLSTM).
+
+---
+
+## 🧪 LOG THÍ NGHIỆM
+
+### Exp 1: Baseline 2-class (Valence binary)
+
+| Chế độ | Model | Accuracy | F1-Macro | Ghi chú |
+| :--- | :--- | ---: | ---: | :--- |
+| Subject-Dependent | SVM (Linear) | **87.46%** | **87.93%** | Rất tốt, phù hợp bài báo gốc (~87.53%) |
+| Subject-Independent (LOSO) | SVM (Linear) | 50.50% | 48.31% | Tương đương đoán mò (tung đồng xu) |
+
+### Exp 2: 4-class (Valence × Arousal → Q1/Q2/Q3/Q4)
+
+| Chế độ | Model | Accuracy | F1-Macro | Ghi chú |
+| :--- | :--- | ---: | ---: | :--- |
+| Subject-Dependent | SVM (Linear) | **81.26%** | **81.35%** | 4 class phân bố đều trên confusion matrix |
+| Subject-Independent (LOSO) | SVM (Linear) | 35.13% | 19.50% | F1 rất thấp vì model không dám predict 2/4 class (Sợ hãi, Thư giãn bị 0 predictions) |
+
+**Phân tích Exp 2 LOSO (4-class):**
+- Confusion Matrix cho thấy SVM chỉ dự đoán vào 2 class (Vui vẻ và Buồn bã), hoàn toàn bỏ qua Sợ hãi và Thư giãn.
+- Nguyên nhân: Domain Shift quá lớn giữa các subject khiến SVM tuyến tính không tìm được ranh giới phân lớp phổ quát.
+- Accuracy 35% vẫn cao hơn random guess (25%), nhưng F1-Macro chỉ 19.5% vì 2 class bị F1=0 kéo trung bình xuống.
+
+### Exp 3: LOSO (Leave-One-Subject-Out) — Tổng kết
+
+| Model | 2-class Acc | 2-class F1 | 4-class Acc | 4-class F1 |
+| :--- | ---: | ---: | ---: | ---: |
+| SVM (Linear) | 50.50% | 48.31% | 35.13% | 19.50% |
+
+**Kết luận Exp 3:** SVM truyền thống hoàn toàn bất lực trước thử thách LOSO do sự khác biệt sóng não giữa các cá nhân (Domain Shift). Đây là bằng chứng thực nghiệm mạnh mẽ cho thấy cần Deep Learning để giải bài toán nhận diện cảm xúc chéo người.
+
+---
+
+## 📝 GHI CHÚ CHO BÁO CÁO
+
+### Dành cho phần Thảo luận (Discussion):
+1. **Về ngưỡng phân lớp:** Nhóm đã chuyển từ ngưỡng cố định 5.0 sang **Global Median** (Valence: 3.08, Arousal: 3.315) để đảm bảo phân bố nhãn cân bằng hơn, đúng theo best practice trong nghiên cứu DEAP.
+2. **Về dải tần:** Loại bỏ dải Delta (0.5–4Hz) vì liên quan đến giấc ngủ sâu, không mang tín hiệu cảm xúc. Chỉ giữ Theta, Alpha, Beta, Gamma.
+3. **Về SVM vs Deep Learning:** Kết quả LOSO chứng minh SVM không có khả năng tổng quát hoá chéo người. Motivation cho việc áp dụng CNN/BiLSTM.
+4. **Về Class Imbalance:** Subject 23 đánh giá 100% video là Low Arousal. Nếu dùng Accuracy → nghịch lý (đoán mù 100%). Do đó nhóm chọn F1-Score (Macro) làm metric quyết định.
+5. **Về tối ưu RAM:** Downcasting float32 + Garbage Collection giảm 50% RAM, tăng tốc I/O cho DataLoader.

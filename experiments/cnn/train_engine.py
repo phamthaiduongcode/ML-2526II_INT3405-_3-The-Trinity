@@ -22,7 +22,7 @@ from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut
 
 # ── Thêm project root vào sys.path để import nội bộ ─────────────────────────
 current_file = os.path.abspath(__file__)
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(current_file))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 

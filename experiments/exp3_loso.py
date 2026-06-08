@@ -45,7 +45,7 @@ for d in [LOG_DIR, PLOT_DIR]:
 BATCH_SIZE = 256
 MAX_EPOCHS = 60
 PATIENCE   = 15
-LR         = 3e-4  # FIX: Giảm từ 0.001 xuống 3e-4 để tránh bước nhảy quá lớn trên tập Train LOSO đồ sộ
+LR         = 0.001
 DEVICE     = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.backends.cudnn.benchmark = True
 
@@ -125,11 +125,6 @@ if __name__ == "__main__":
             # Khởi tạo mạng mạng thần kinh và bộ tối ưu hóa
             model     = BiLSTM_Model().to(DEVICE)
             optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-            
-            # FIX: Thêm bộ điều chỉnh Learning Rate tự động khi loss vùng Validation chững lại
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode='min', patience=5, factor=0.5, verbose=False
-            )
 
             # Bộ theo dõi để áp dụng Early Stopping
             best_val_loss    = float('inf')
@@ -163,9 +158,6 @@ if __name__ == "__main__":
                         all_trues.extend(by.cpu().numpy())
 
                 val_loss /= len(test_loader)
-
-                # FIX: Cập nhật scheduler định kỳ sau mỗi epoch dựa trên val_loss
-                scheduler.step(val_loss)
 
                 # Đánh giá nhanh hiệu năng epoch bằng hàm dùng chung metrics.py
                 epoch_metrics = evaluate_metrics(all_trues, all_preds)

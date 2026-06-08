@@ -1,29 +1,39 @@
-# EmoWave 🧠
-**EEG-Based Emotion Recognition — From SVM to Deep Learning**
+# EEG Emotion Recognition — BiLSTM
 
-Bài tập lớn môn Machine Learning | Nhóm 3 người | 3 tuần
+Phân loại cảm xúc từ tín hiệu EEG dùng BiLSTM trên bộ dữ liệu DEAP.
 
 ---
 
-## Cấu trúc project
+## Cấu trúc dự án
 
 ```
-emowave/
-│
+EEG_Project/
 ├── data/
-│   └── deap/          ← Đặt s01.dat → s32.dat vào đây
+│   ├── raw/            ← File .dat gốc (không push lên Git)
+│   └── processed/      ← File .npy sau khi chạy preprocess (không push lên Git)
 │
-├── utils/
-│   └── deap_loader.py ← Load & tiền xử lý data (DÙNG CHUNG)
+├── src/
+│   ├── models/
+│   │   └── eeg_bilstm.py   ← EEG_BiLSTM (Exp1/2) + BiLSTM_Model (Exp3)
+│   ├── utils/
+│   │   ├── dataset.py      ← set_seed, EEGDataset, get_dataloaders
+│   │   └── metrics.py      ← evaluate_metrics, plot_confusion_matrix, plot_learning_curves
+│   └── data_pipeline/
+│       ├── load_raw.py     ← Tải DEAP từ Kaggle
+│       └── preprocess.py   ← Tiền xử lý, tạo file .npy
 │
-├── models/
-│   ├── svm_model.py   ← Người 1
-│   ├── cnn_model.py   ← Người 2
-│   └── lstm_model.py  ← Người 3
+├── experiments/
+│   ├── exp1_2class.py  ← Train Exp 1 (K-Fold, 2-class)
+│   ├── exp2_4class.py  ← Train Exp 2 (K-Fold, 4-class)
+│   ├── exp3_loso.py    ← Train Exp 3 (LOSO)
+│   └── run_tsne.py     ← Vẽ t-SNE từ weights Exp 1
 │
-├── results/           ← Kết quả, confusion matrix, biểu đồ
-├── notebooks/         ← Jupyter notebooks thử nghiệm
+├── result/
+│   ├── logs/           ← File .json kết quả
+│   ├── plots/          ← Ảnh Confusion Matrix, Learning Curve, t-SNE
+│   └── checkpoints/    ← Weights .pth và index .npy
 │
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
@@ -38,44 +48,49 @@ pip install -r requirements.txt
 
 ---
 
-## Chạy nhanh
+## Quy trình chạy
 
-```python
-from utils.deap_loader import load_all_subjects, prepare_for_svm
+### Bước 1 — Tải dữ liệu
 
-# Load data (2 lớp: Positive / Negative)
-X, y, groups = load_all_subjects(label_type="2class")
+```bash
+python -m src.data_pipeline.load_raw
+```
 
-# Hoặc 4 lớp: Vui vẻ / Sợ hãi / Buồn / Thư giãn
-X, y, groups = load_all_subjects(label_type="4class")
+### Bước 2 — Tiền xử lý
 
-# Chuẩn bị cho từng model
-X_tr, X_te, y_tr, y_te, scaler = prepare_for_svm(X, y)    # Người 1
-X_tr, X_te, y_tr, y_te         = prepare_for_cnn(X, y)    # Người 2
-X_tr, X_te, y_tr, y_te         = prepare_for_lstm(X, y)   # Người 3
+```bash
+python -m src.data_pipeline.preprocess
+```
+
+Tạo ra 4 file trong `data/processed/`: `X_epochs.npy`, `y_valence.npy`, `y_arousal.npy`, `subject_groups.npy`.
+
+### Bước 3 — Chạy thực nghiệm
+
+```bash
+# Exp 1: K-Fold, 2-class
+python -m experiments.exp1_2class
+
+# Exp 2: K-Fold, 4-class
+python -m experiments.exp2_4class
+
+# Exp 3: LOSO
+python -m experiments.exp3_loso
+
+# Vẽ t-SNE (sau khi có kết quả Exp 1)
+python -m experiments.run_tsne
 ```
 
 ---
 
 ## Dataset
 
-**DEAP** (Koelstra et al., 2012): 32 subjects, 40 trials/subject, 32 kênh EEG @ 128Hz.
+**DEAP** (Koelstra et al., 2012): 32 subjects, 40 trials/subject, 32 kênh EEG @ 128 Hz.
 - Nhãn: Valence, Arousal, Dominance, Liking (thang 1–9)
-- Download: đặt file vào `data/deap/`
-
----
-
-## Phân công
-
-| Người | Model | File |
-|-------|-------|------|
-| Người 1 | SVM + LDS baseline | `models/svm_model.py` |
-| Người 2 | CNN 1D | `models/cnn_model.py` |
-| Người 3 | LSTM / BiLSTM | `models/lstm_model.py` |
+- Download: đặt file `.dat` vào `data/raw/` hoặc dùng script `load_raw.py`
 
 ---
 
 ## Tài liệu tham khảo
 
-- Wang et al. (2014). *Emotional state classification from EEG data using machine learning approach.* Neurocomputing, 129, 94–106.
 - Koelstra et al. (2012). *DEAP: A database for emotion analysis using physiological signals.* IEEE Transactions on Affective Computing.
+- Wang et al. (2014). *Emotional state classification from EEG data using machine learning approach.* Neurocomputing, 129, 94–106.

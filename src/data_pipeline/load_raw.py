@@ -1,36 +1,39 @@
-import kagglehub
+# File: src/data_pipeline/load_raw.py
+"""
+Tải DEAP dataset từ Kaggle và đặt file vào data/raw/.
+Chạy: python -m src.data_pipeline.load_raw
+"""
 import os
 import shutil
+import kagglehub
+
 
 def download_and_setup_deap():
-    # 1. Download dataset từ Kaggle
+    # 1. Download từ Kaggle
     print("Đang tải DEAP dataset từ Kaggle (manh123df/deap-dataset)...")
     download_path = kagglehub.dataset_download("manh123df/deap-dataset")
     print(f"Đã tải về cache tại: {download_path}")
 
-    # 2. Xác định thư mục đích (data/raw)
-    # File này nằm trong data/, nên thư mục con sẽ là data/raw
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    target_dir = os.path.join(current_dir, "raw")
-    
-    if not os.path.exists(target_dir):
-        os.makedirs(target_dir)
-        print(f"Đã tạo thư mục: {target_dir}")
+    # 2. Xác định thư mục đích data/raw (tính từ root project)
+    ROOT_DIR   = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    target_dir = os.path.join(ROOT_DIR, "data", "raw")
+    os.makedirs(target_dir, exist_ok=True)
+    print(f"Thư mục đích: {target_dir}")
 
-    # 3. Tìm và copy 32 file .dat (s01.dat -> s32.dat)
+    # 3. Copy 32 file .dat
     print("Đang lọc và copy 32 file .dat vào thư mục dự án...")
     count = 0
     for root, dirs, files in os.walk(download_path):
         for file in files:
-            # Chỉ lấy các file định dạng sXX.dat (32 subjects)
             if file.endswith(".dat") and file.startswith("s") and len(file) <= 7:
                 src_path = os.path.join(root, file)
                 dst_path = os.path.join(target_dir, file)
                 shutil.copy2(src_path, dst_path)
                 count += 1
-    
+
     print(f"Thành công! Đã copy {count} file vào {target_dir}")
-    print("Bây giờ bạn đã có đủ dữ liệu để chạy các script trong models/.")
+    print("Tiếp theo chạy: python -m src.data_pipeline.preprocess")
+
 
 if __name__ == "__main__":
     download_and_setup_deap()

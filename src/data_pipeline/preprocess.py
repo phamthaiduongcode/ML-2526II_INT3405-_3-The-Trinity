@@ -51,7 +51,7 @@ def preprocess_subject(file_path, global_median_val, global_median_aro):
 def normalize_after_split(X_train, X_test, mode='channel'):
     """
     Chuẩn hóa dữ liệu SAU KHI chia Train/Test — tránh Data Leakage.
-    mode: 'channel' (khuyến nghị cho DL) | 'flatten'
+    mode: 'channel'| 'flatten'
     """
     n_train, n_ch, n_t = X_train.shape
     n_test  = X_test.shape[0]

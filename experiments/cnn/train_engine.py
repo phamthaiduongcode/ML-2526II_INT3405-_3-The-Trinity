@@ -22,13 +22,14 @@ from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut
 
 # ── Thêm project root vào sys.path để import nội bộ ─────────────────────────
 current_file = os.path.abspath(__file__)
-PROJECT_ROOT = os.path.dirname(os.path.dirname(current_file))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from src.models.cnn import EEGNet2D
+from src.models.eegnet import EEGnet
 from src.data_pipeline.preprocess import normalize_after_split, get_dynamic_class_weights
-from src.utils.dataset import set_seed, EEGDataset, get_dataloaders
+from src.utils.dataset import set_seed, get_dataloaders
 from src.utils.metrics import evaluate_metrics, plot_confusion_matrix, plot_learning_curves
 
 
@@ -193,6 +194,10 @@ def train_one_epoch(model, loader, optimizer, criterion, device, max_grad_norm=1
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_grad_norm)
         optimizer.step()
 
+        # EEGnet: có apply_max_norm() → enforce, EEGNet2D: không có → skip
+        if hasattr(model, 'apply_max_norm'):
+            model.apply_max_norm()
+
         running_loss += loss.item() * y_batch.size(0)
         preds = torch.argmax(outputs, dim=1)
         all_preds.extend(preds.cpu().numpy())
@@ -262,6 +267,7 @@ def run_experiment(config: dict):
             - patience_lr  (int): Số epoch chờ trước khi giảm LR (default: 5)
             - patience_es  (int): Early stopping patience (default: 10)
             - max_grad_norm(float): Ngưỡng clip gradient (default: 1.0)
+            - Model (string) : phân loại mô hình có thể là EEGnet hoặc là cnn thuần 
     """
     # ── 0. Parse config ──────────────────────────────────────────────────────
     exp_name    = config["exp_name"]
@@ -270,14 +276,19 @@ def run_experiment(config: dict):
     cv_method   = config["cv"]
     n_splits    = config.get("n_splits", 5)
 
-    # ── Hyper-parameters (config-driven, có default) ─────────────────────────
-    BATCH_SIZE     = config.get("batch_size", 256)
+    # ── Hyper-parameters (config-driven, có default) ──────────────────────E─── 
+    BATCH_SIZE     = config.get("batch_size", 64)
     NUM_EPOCHS     = config.get("num_epochs", 50)
     LR             = config.get("lr", 3e-4)
     WEIGHT_DECAY   = config.get("weight_decay", 1e-4)
     PATIENCE_LR    = config.get("patience_lr", 5)
     PATIENCE_ES    = config.get("patience_es", 15)
     MAX_GRAD_NORM  = config.get("max_grad_norm", 1.0)
+    MODEL_NAME = config.get("Model" , "EEGnet2d" )
+    MODEL_REGISTRY = {
+    "EEGnet2d": EEGNet2D,
+    "EEGnet":   EEGnet,
+}
 
     # ── Device ───────────────────────────────────────────────────────────────
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -372,7 +383,8 @@ def run_experiment(config: dict):
         )
 
         # ── 5d. Model, Optimizer, Scheduler, Criterion ──────────────────────
-        model = EEGNet2D(num_classes=num_classes).to(device)
+        model_cls = MODEL_REGISTRY[MODEL_NAME]
+        model      = model_cls(num_classes=num_classes).to(device)
         optimizer = Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
         scheduler = AdaptiveLRScheduler(
             optimizer,

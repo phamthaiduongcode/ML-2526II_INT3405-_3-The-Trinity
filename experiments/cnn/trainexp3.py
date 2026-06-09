@@ -6,6 +6,7 @@ if __name__ == "__main__":
         "num_classes": 2,
         "label":       "valence",
         "cv":          "loso",
-        "patience_es" : 20
+        "patience_es" : 20,
+        "Model" : "EEGnet2d"
     }
     train_engine.run_experiment(config= config_exp3)

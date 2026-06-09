@@ -20,7 +20,8 @@ import matplotlib.patches as mpatches
 from sklearn.manifold import TSNE
 from sklearn.model_selection import StratifiedShuffleSplit
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Đảm bảo nhận diện đúng thư mục root của project (lùi 3 bước: bilstm -> experiments -> root)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT_DIR)
 
 from src.models.eeg_bilstm import EEG_BiLSTM

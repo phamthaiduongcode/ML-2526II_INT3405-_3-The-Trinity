@@ -22,7 +22,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
 # Đảm bảo nhận diện đúng thư mục root của project
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Đảm bảo nhận diện đúng thư mục root của project (lùi 3 bước: bilstm -> experiments -> root)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT_DIR)
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -26,7 +26,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.models.cnn import EEGNet2D
+from src.models.cnn import CNN
 from src.models.eegnet import EEGnet
 from src.data_pipeline.preprocess import normalize_after_split, get_dynamic_class_weights
 from src.utils.dataset import set_seed, get_dataloaders
@@ -182,7 +182,7 @@ def train_one_epoch(model, loader, optimizer, criterion, device, max_grad_norm=1
         X_batch = X_batch.to(device)
         y_batch = y_batch.to(device)
 
-        # unsqueeze(1): (N, 32, 128) → (N, 1, 32, 128) cho EEGNet2D
+        # unsqueeze(1): (N, 32, 128) → (N, 1, 32, 128) cho CNN
         X_batch = X_batch.unsqueeze(1)
 
         optimizer.zero_grad()
@@ -194,7 +194,7 @@ def train_one_epoch(model, loader, optimizer, criterion, device, max_grad_norm=1
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_grad_norm)
         optimizer.step()
 
-        # EEGnet: có apply_max_norm() → enforce, EEGNet2D: không có → skip
+        # EEGnet: có apply_max_norm() → enforce, CNN: không có → skip
         if hasattr(model, 'apply_max_norm'):
             model.apply_max_norm()
 
@@ -258,9 +258,9 @@ def run_experiment(config: dict):
             - exp_name    (str): Tên experiment, dùng để lưu kết quả
             - num_classes  (int): 2 hoặc 4
             - label        (str): "valence", "arousal", hoặc "4class"
-            - cv           (str): "stratified_kfold" hoặc "leave_one_group_out"
+            - cv           (str): "stratified_kfold" hoặc loso  hoac subject -Specifix -fine-tuning 
             - n_splits     (int): Số folds (chỉ dùng cho stratified_kfold)
-            - batch_size   (int): Batch size (default: 64)
+            - batch_size   (int): Batch size (default: 256)
             - num_epochs   (int): Số epoch tối đa (default: 50)
             - lr          (float): Learning rate (default: 1e-3)
             - weight_decay(float): L2 regularization (default: 1e-4)
@@ -277,16 +277,17 @@ def run_experiment(config: dict):
     n_splits    = config.get("n_splits", 5)
 
     # ── Hyper-parameters (config-driven, có default) ──────────────────────E─── 
-    BATCH_SIZE     = config.get("batch_size", 64)
+    BATCH_SIZE     = config.get("batch_size", 256)
     NUM_EPOCHS     = config.get("num_epochs", 50)
     LR             = config.get("lr", 3e-4)
+    LR_FINETUNE    = config.get("lr_finetune", 5e-5)
     WEIGHT_DECAY   = config.get("weight_decay", 1e-4)
     PATIENCE_LR    = config.get("patience_lr", 5)
     PATIENCE_ES    = config.get("patience_es", 15)
     MAX_GRAD_NORM  = config.get("max_grad_norm", 1.0)
-    MODEL_NAME = config.get("Model" , "EEGnet2d" )
+    MODEL_NAME = config.get("Model" , "CNN" )
     MODEL_REGISTRY = {
-    "EEGnet2d": EEGNet2D,
+    "CNN": CNN,
     "EEGnet":   EEGnet,
 }
 
@@ -327,12 +328,11 @@ def run_experiment(config: dict):
             n_splits=n_splits, shuffle=True, random_state=42
         )
         splits = list(splitter.split(X, y))
-    elif cv_method in ("leave_one_group_out", "loso"):
+    elif cv_method in ("loso"):
         splitter = LeaveOneGroupOut()
         splits = list(splitter.split(X, y, groups=subject_groups))
         n_splits = len(splits)
         print(f"   LOSO: {n_splits} folds (1 subject/fold)")
-
     else:
         raise ValueError(f"❌ cv_method không hợp lệ: {cv_method}")
 
@@ -354,10 +354,10 @@ def run_experiment(config: dict):
 
         fold_start = time.time()
         print(f"\n{'─' * 70}")
-        if cv_method in ("leave_one_group_out", "loso"):
+        if cv_method in ("loso"):
             subject_id = subject_groups[val_idx[0]] + 1
             print(f"📂 FOLD {fold_idx+1}/{n_splits} — Test Subject: S{subject_id:02d}")
-        else:
+        elif cv_method in ("stratified_kfold"):
             print(f"📂 FOLD {fold_idx + 1}/{n_splits}")
         print(f"{'─' * 70}")
         print(f"   Train: {len(train_idx)} samples  |  Val: {len(val_idx)} samples")

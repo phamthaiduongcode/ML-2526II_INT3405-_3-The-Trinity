@@ -27,9 +27,9 @@ class ConvBlock(nn.Module):
 
 
 # ==============================================================================
-# MAIN MODEL: EEGNet2D
+# MAIN MODEL: CNN
 # ==============================================================================
-class EEGNet2D(nn.Module):
+class CNN(nn.Module):
     """
     2D-CNN phân loại cảm xúc từ EEG (DEAP dataset).
 
@@ -119,11 +119,11 @@ class EEGNet2D(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Kiểm tra shape đầu vào — bắt lỗi sớm
         assert x.dim() == 4, (
-            f"[EEGNet2D] Cần input 4D (batch, 1, 32, 128), nhận được {tuple(x.shape)}\n"
+            f"[CNN] Cần input 4D (batch, 1, 32, 128), nhận được {tuple(x.shape)}\n"
             f"Hint: hãy gọi  x = x.unsqueeze(1) trong training loop trước khi forward."
         )
         assert x.shape[1] == 1, (
-            f"[EEGNet2D] Channel dimension phải = 1, nhận được {x.shape[1]}."
+            f"[CNN] Channel dimension phải = 1, nhận được {x.shape[1]}."
         )
 
         x = self.block1(x)   # → (batch, 16, 32, 64)

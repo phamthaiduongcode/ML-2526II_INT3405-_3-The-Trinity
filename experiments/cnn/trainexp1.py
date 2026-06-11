@@ -8,6 +8,6 @@ if __name__ == "__main__":
         "label":       "valence",
         "cv":          "stratified_kfold",
         "n_splits":    5,
-        "Model" : "EEGnet2d"
+        "Model" : "CNN"
     }
     train_engine.run_experiment(config=config_exp1)

@@ -27,9 +27,9 @@ class ConvBlock(nn.Module):
 
 
 # ==============================================================================
-# MAIN MODEL: EEGNet2D
+# MAIN MODEL: CNN
 # ==============================================================================
-class EEGNet2D(nn.Module):
+class CNN(nn.Module):
     """
     2D-CNN phân loại cảm xúc từ EEG (DEAP dataset).
 
@@ -119,11 +119,11 @@ class EEGNet2D(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Kiểm tra shape đầu vào — bắt lỗi sớm
         assert x.dim() == 4, (
-            f"[EEGNet2D] Cần input 4D (batch, 1, 32, 128), nhận được {tuple(x.shape)}\n"
+            f"[CNN] Cần input 4D (batch, 1, 32, 128), nhận được {tuple(x.shape)}\n"
             f"Hint: hãy gọi  x = x.unsqueeze(1) trong training loop trước khi forward."
         )
         assert x.shape[1] == 1, (
-            f"[EEGNet2D] Channel dimension phải = 1, nhận được {x.shape[1]}."
+            f"[CNN] Channel dimension phải = 1, nhận được {x.shape[1]}."
         )
 
         x = self.block1(x)   # → (batch, 16, 32, 64)
@@ -152,54 +152,3 @@ class EEGNet2D(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
-
-
-# ==============================================================================
-# UTILITIES
-# ==============================================================================
-def count_parameters(model: nn.Module) -> int:
-    """In bảng thống kê số lượng trainable parameters theo từng layer."""
-    total = 0
-    print(f"\n{'Layer':<40} {'Shape':<25} {'Params':>10}")
-    print("─" * 78)
-    for name, param in model.named_parameters():
-        if param.requires_grad:
-            n = param.numel()
-            total += n
-            print(f"{name:<40} {str(tuple(param.shape)):<25} {n:>10,}")
-    print("─" * 78)
-    print(f"{'TOTAL TRAINABLE PARAMETERS':<65} {total:>10,}\n")
-    return total
-
-
-# ==============================================================================
-# QUICK SANITY CHECK — chạy trực tiếp để verify shape
-# ==============================================================================
-if __name__ == "__main__":
-    print("=" * 78)
-    print("EEGNet2D — Sanity Check")
-    print("=" * 78)
-
-    for n_cls, exp in [(2, "Exp1 & Exp3 (2-class)"), (4, "Exp2 (4-class)")]:
-        print(f"\n[{exp}]")
-        model = EEGNet2D(num_classes=n_cls)
-        model.eval()
-
-        dummy = torch.randn(8, 1, 32, 128)   # batch=8, channel=1, 32 kênh EEG, 128 timestep
-        with torch.no_grad():
-            out = model(dummy)
-
-        print(f"  Input  : {tuple(dummy.shape)}")
-        print(f"  Output : {tuple(out.shape)}  ✅" if out.shape == (8, n_cls)
-              else f"  Output : {tuple(out.shape)}  ❌ SHAPE SAI!")
-
-        count_parameters(model)
-
-    # Test assertion
-    print("[Test assertion unsqueeze]")
-    try:
-        bad_input = torch.randn(8, 32, 128)   # thiếu channel dim
-        model = EEGNet2D(num_classes=2)
-        model(bad_input)
-    except AssertionError as e:
-        print(f"  ✅ Bắt đúng lỗi: {e}")

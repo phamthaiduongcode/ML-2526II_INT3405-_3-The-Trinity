@@ -124,7 +124,11 @@ pip install -r requirements.txt
 ```
 
 **Bước 3: Chuẩn bị dữ liệu**
-- Đặt các file dữ liệu gốc vào thư mục `data/raw/` (Xem mục 6 để biết cấu trúc).
+- Đặt các file dữ liệu gốc vào thư mục `data/raw/` (Xem mục 6 để biết cấu trúc) hoắc sử dụng lệnh 
+```bash
+python src/data_pipeline/load_raw.py
+``` 
+để tải dữ liệu.
 - Chạy script tiền xử lý (nếu chạy dưới dạng file python):
 ```bash
 python src/data_pipeline/preprocess.py

@@ -294,8 +294,10 @@ Báo cáo này trình bày một hệ thống phân loại cảm xúc từ tín 
 ├── utils/                  ← Thư mục tiện ích ở root level (hiện chứa cache)
 ├── result/
 │   └── svm/                ← Lưu trữ kết quả thực nghiệm của SVM
-│       ├── logs/           ← Log kết quả metrics (JSON), danh sách features (TXT)
-│       └── plots/          ← Biểu đồ Confusion Matrix, đường ROC...
+│   |   ├── logs/           ← Log kết quả metrics (JSON), danh sách features (TXT)
+│   |   └── plots/          ← Biểu đồ Confusion Matrix, đường ROC...
+|   |   └── checkpoints/    ← Lưu bộ trọng số tốt nhât của mô hình (.npy)
+|   └── ...                 ← Tương tự với các mô hình BiLSTM, CNN2D, EEGNet, BiLSTM -CNN2D
 ├── requirements.txt        ← Danh sách thư viện cần thiết
 └── README.md               ← File thông tin dự án
 ```

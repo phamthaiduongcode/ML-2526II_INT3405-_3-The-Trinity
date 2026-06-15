@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EEG Emotion Recognition </title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reset.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/white.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai.min.css">
+
+  <style>
+    :root {
+      --blue:    #1E93AB;
+      --purple:  #7B5EA7;
+      --orange:  #C2610F;
+      --green:   #2E7D32;
+      --red:     #E62727;
+      --gray:    #888888;
+      --text:    #333333;
+      --light:   #999999;
+    }
+
+    .reveal { font-family: system-ui, -apple-system, sans-serif; }
+    .reveal h1 { font-size: 0.7em; line-height: 1.3; color: var(--text); }
+    .reveal h2 { font-size: 0.7em; color: var(--text); border-bottom: 2px solid #e0e0e0; padding-bottom: 0.2em; margin-bottom: 0.5em; }
+    .reveal h3 { color: var(--text); }
+    .reveal p, .reveal li { color: var(--text); line-height: 1.5; }
+    .reveal strong { color: #111; }
+
+    .text-light   { color: var(--light); }
+    .text-blue    { color: var(--blue); }
+    .text-purple  { color: var(--purple); }
+    .text-orange  { color: var(--orange); }
+    .text-green   { color: var(--green); }
+    .text-red     { color: var(--red); }
+    .keyword      { color: var(--red); font-weight: bold; }
+
+    .inline-code {
+      font-family: 'Courier New', monospace;
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      padding: 0.08em 0.35em;
+      font-size: 0.88em;
+      color: #c0392b;
+    }
+
+    .code-wrapper {
+      background: #272822;
+      border-radius: 6px;
+      padding: 0 !important;
+      margin: 0.5em 0 !important;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .code-wrapper code {
+      padding: 0.7em 1em !important;
+      font-size: 0.7em !important;
+      line-height: 1.4 !important;
+      display: block;
+    }
+
+    .question-box {
+      background: #fff8e1;
+      border-left: 4px solid #f9a825;
+      border-radius: 0 6px 6px 0;
+      padding: 0.55em 0.85em;
+      margin: 0.45em 0;
+      font-size: 0.9em;
+    }
+    .question-title {
+      font-weight: bold;
+      color: #f57f17;
+      margin-bottom: 0.2em;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card-blue   { border: 2px solid var(--blue);   border-radius: 8px; overflow: hidden; }
+    .card-purple { border: 2px solid var(--purple); border-radius: 8px; overflow: hidden; }
+    .card-orange { border: 2px solid var(--orange); border-radius: 8px; overflow: hidden; }
+    .card-green  { border: 2px solid var(--green);  border-radius: 8px; overflow: hidden; }
+    .card-red    { border: 2px solid var(--red);    border-radius: 8px; overflow: hidden; }
+
+    .card-blue   .card-header { background: var(--blue);   color: #fff; padding: 5px 12px; font-weight: bold; }
+    .card-purple .card-header { background: var(--purple); color: #fff; padding: 5px 12px; font-weight: bold; }
+    .card-orange .card-header { background: var(--orange); color: #fff; padding: 5px 12px; font-weight: bold; }
+    .card-green  .card-header { background: var(--green);  color: #fff; padding: 5px 12px; font-weight: bold; }
+    .card-red    .card-header { background: var(--red);    color: #fff; padding: 5px 12px; font-weight: bold; }
+
+    .card-blue   .card-body { background: #e0f4f8; padding: 0.4em 0.65em; }
+    .card-purple .card-body { background: #ede7f6; padding: 0.4em 0.65em; }
+    .card-orange .card-body { background: #fff3e0; padding: 0.4em 0.65em; }
+    .card-green  .card-body { background: #e8f5e9; padding: 0.4em 0.65em; }
+    .card-red    .card-body { background: #fce4ec; padding: 0.4em 0.65em; }
+
+    .diff-good { background: #e8f5e9; border-left: 4px solid var(--green); padding: 0.55em 0.8em; border-radius: 4px; }
+    .diff-bad  { background: #fce4ec; border-left: 4px solid var(--red);   padding: 0.55em 0.8em; border-radius: 4px; }
+    .diff-good .diff-title { font-weight: bold; color: var(--green); margin-bottom: 0.3em; }
+    .diff-bad  .diff-title { font-weight: bold; color: var(--red);   margin-bottom: 0.3em; }
+
+    .timeline-row {
+      display: flex;
+      align-items: center;
+      padding: 0 0.4em;
+      margin: 1em 0 0.6em;
+    }
+    .timeline-node {
+      width: 2.4em; height: 2.4em;
+      border-radius: 50%;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 1.1em;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .timeline-line { flex: 1; height: 5px; }
+
+    .section-title h1 { font-size: 2.2em; }
+    .section-title h1 .num { color: var(--light); font-size: 0.9em; }
+
+    .pipe-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4em;
+      flex-wrap: wrap;
+      margin: 0.6em 0;
+    }
+    .pipe-box {
+      border-radius: 8px;
+      padding: 0.4em 0.65em;
+      font-size: 0.8em;
+      font-weight: bold;
+      text-align: center;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      min-width: 85px;
+    }
+    .pipe-arrow {
+      font-size: 1.3em;
+      color: var(--light);
+      font-weight: bold;
+    }
+    .branch-card {
+      border-radius: 8px;
+      padding: 0.45em 0.65em;
+      font-size: 0.78em;
+      line-height: 1.4;
+    }
+    .small-note { font-size: 0.75em; color: var(--light); }
+
+    /* ── RESULT TABLES ──────────────────────────── */
+    .reveal table.result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78em;
+      margin: 0.5em 0;
+    }
+    .reveal table.result-table th, .reveal table.result-table td {
+      border: 1px solid #ddd;
+      padding: 0.35em 0.5em;
+      text-align: center;
+    }
+    .reveal table.result-table th {
+      background: var(--blue);
+      color: #fff;
+    }
+    .reveal table.result-table td.label-cell {
+      font-weight: bold;
+      background: #f5f5f5;
+      text-align: left;
+    }
+    .reveal table.result-table tr.best td { background: #e8f5e9; font-weight: bold; }
+  </style>
+</head>
+
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ===== 1. TITLE SLIDE ===== -->
+    <section style="font-size:0.8em;">
+      <h1>Nhận Diện Cảm Xúc Từ Tín Hiệu EEG</h1>
+      <p style="margin-top:1.2em;">Báo cáo Bài tập lớn — Học phần Học máy (INT3405)</p>
+      <p>Trường Đại học Công nghệ, ĐHQGHN </p>
+      <p> Thành viên</p>
+      <p>
+        <strong>Nguyễn Đức Long</strong> · <strong>Phạm Thái Dương</strong> · <strong>Nguyễn Tiến Dũng</strong>
+      </p>
+    </section>
+
+    <!-- ===== 2. MUC LUC ===== -->
+    <section style="font-size:0.6em;">
+      <h2>Nội dung trình bày</h2>
+      <ol start="0" style="font-size:1.0em; line-height:1.9;">
+        <li>Đặt vấn đề &amp; Bộ dữ liệu DEAP</li>
+        <li>Tiền xử lý &amp; Thiết lập thực nghiệm <span class="text-light">— Dương</span></li>
+        <li>Mô hình SVM &amp; cải tiến đặc trưng <span class="text-light">— Dũng</span></li>
+        <li>CNN 2D &amp; cải tiến EEGNet chuyên biệt <span class="text-light">— Long</span></li>
+        <li>BiLSTM &amp; cải tiến Dual-Branch Fusion (DGCNN + BiLSTM) <span class="text-light">— Dương</span></li>
+        <li>Kết quả thực nghiệm &amp; So sánh mô hình</li>
+        <li>Hạn chế, Kết luận &amp; Phân chia công việc</li>
+      </ol>
+    </section>
+
+    <!-- ===== 3. DAT VAN DE ===== -->
+    <section style="font-size:0.6em;">
+      <h2>0.1 Đặt vấn đề</h2>
+      <div class="question-box">
+        <div class="question-title">Bài toán</div>
+        Phân loại cảm xúc theo mô hình không gian 2 chiều của <strong>Russell</strong>:
+        <span class="text-blue">Valence</span> (mức độ dễ chịu: tiêu cực ↔ tích cực) và
+        <span class="text-purple">Arousal</span> (mức độ kích động: bình tĩnh ↔ phấn khích), dựa trên tín hiệu <strong>EEG</strong> — nguồn tín hiệu sinh lý khách quan nhất, khó che giấu hơn biểu cảm,giọng nói,hành động.
+      </div>
+      <p><strong>3 thách thức cốt lõi:</strong></p>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6em;">
+        <div class="card-red"><div class="card-header">Low SNR</div><div class="card-body">Biên độ EEG cỡ µV, dễ bị lẫn lộn bởi nhiễu EOG/EMG/ECG &amp; cần nhiều nhiễu kỹ thuật.</div></div>
+        <div class="card-orange"><div class="card-header">Cross-subject variability</div><div class="card-body">Cấu trúc hộp sọ &amp; phản ứng cảm xúc khác biệt giữa các cá thể → khó để đưa ra tổng quát hóa chung cho tất cả mọi người .</div></div>
+        <div class="card-purple"><div class="card-header">Đa chiều phức tạp</div><div class="card-body">EEG vừa có đặc trưng <strong>không gian</strong> (điện cực) vừa có <strong>chuỗi thời gian</strong>.</div></div>
+      </div>
+      <div class="question-box" style="margin-top:0.6em;">
+        <div class="question-title">Chiến lược nghiên cứu 2 giai đoạn</div>
+        <strong>Giai đoạn 1</strong>: so sánh công bằng (Fair Benchmark) SVM / CNN2D / BiLSTM trên cùng pipeline với dữ liệu thô →
+        <strong>Giai đoạn 2</strong> (đóng góp cốt lõi): trích xuất đặc trưng miền tần số (PSD, DE) làm đầu vào cho kiến trúc lai <strong>CNN-BiLSTM Dual-Branch Fusion</strong> và <strong>EEGNet chuyên biệt</strong>.
+      </div>
+    </section>
+
+    <!-- ===== 4. DATASET & LABELING ===== -->
+    <section style="font-size:0.6em;">
+      <h2>0.2 Bộ dữ liệu DEAP &amp; Kỹ thuật gán nhãn</h2>
+      <div class="card-blue">
+        <div class="card-header">Bộ dữ liệu DEAP</div>
+        <div class="card-body">
+          32 subjects, mỗi người xem <strong>40 video</strong> ca nhạc (1 phút/video) để kích thích cảm xúc · <strong>32 kênh EEG</strong> chuẩn quốc tế · Nhãn tự đánh giá <strong>Valence / Arousal</strong> thang 0–9.
+        </div>
+      </div>
+      <div class="question-box" style="margin-top:0.6em;">
+        <div class="question-title">Global Median Thresholding (cải tiến gán nhãn)</div>
+        Thay ngưỡng cố định <span class="inline-code">5.0</span>, nhóm tính <strong>trung vị toàn cục</strong> trên 32 subjects:
+        ngưỡng <strong>3.08</strong> (Valence) và <strong>3.315</strong> (Arousal). Giá trị ≥ ngưỡng → <span class="text-green">High</span>, ngược lại → <span class="text-red">Low</span>.
+      </div>
+      <div class="diff-good">
+        <div class="diff-title">✓ Kết quả cải tiến</div>
+        Giải quyết mất cân bằng cục bộ → phân bố nhãn 4 lớp về trạng thái cân bằng hơn,
+        khoảng <strong>30% / 20% / 20% / 30%</strong> (so với lệch nặng nếu dùng ngưỡng 5.0 cố định).
+      </div>
+    </section>
+
+    <!-- ===== SECTION 1: TIEN XU LY & THIET LAP (nhóm dọc) — Dương ===== -->
+    <section>
+      <section style="font-size:1em;">
+        <h1><span class="text-light">1.</span><br>Tiền xử lý dữ liệu<br>&amp; Thiết lập thực nghiệm<br><span class="small-note">— Phạm Thái Dương</span></h1>
+      </section>
+
+      <!-- 1.1 PIPELINE TIEN XU LY -->
+      <section style="font-size:0.6em;">
+      <h2>1.1 Quy trình tiền xử lý (Preprocessing Pipeline)</h2>
+      <div class="pipe-row">
+        <div class="pipe-box" style="background:var(--gray);">Raw EEG<br><span class="small-note" style="color:#eee;">32 kênh, trial 63s</span></div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--blue);">Band-pass<br>giữ θ·α·β·γ</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--purple);">Baseline<br>Subtraction</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--orange);">Epoching<br>1s, không chồng lấp</div>
+      </div>
+      <ul>
+        <li><strong>Chắt lọc dải tần</strong>: giữ Theta (4–8Hz), Alpha (8–13Hz), Beta (13–30Hz), Gamma (30–50Hz). Loại bỏ hoàn toàn <span class="text-red">Delta (0.5–4Hz)</span> vì gắn với giấc ngủ sâu, không mang thông tin cảm xúc.</li>
+        <li><strong>Baseline Subtraction</strong>: mỗi trial 63s gồm 3s nghỉ + 60s kích thích. Trừ biên độ trung bình của 3s nghỉ khỏi 60s kích thích để loại nhiễu trôi dạt nền; 3s nghỉ bị loại khỏi pha huấn luyện.</li>
+        <li><strong>Epoching</strong>: 60s → 60 epoch × 1s (128 samples/epoch), không chồng lấp. Dùng <span class="inline-code">.copy()</span> để cấp phát vùng nhớ độc lập, tránh rò rỉ/trộn dữ liệu giữa các kênh.</li>
+      </ul>
+    </section>
+
+    <!-- 1.2 THIET LAP THUC NGHIEM -->
+      <section style="font-size:0.6em;">
+      <h2>1.2 Thiết lập thực nghiệm — Ma trận 3 × 3</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6em;">
+        <div class="card-blue"><div class="card-header">Exp 1 — 2-class</div><div class="card-body">Subject-Dependent, trộn 32 subjects, <span class="inline-code">Stratified K-Fold k=5</span> trên Valence/Arousal riêng.</div></div>
+        <div class="card-purple"><div class="card-header">Exp 2 — 4-class</div><div class="card-body">Subject-Dependent, kết hợp V×A → 4 góc phần tư (Q1–Q4), đánh giá qua ma trận nhầm lẫn 4×4.</div></div>
+        <div class="card-orange"><div class="card-header">Exp 3 — LOSO</div><div class="card-body">Leave-One-Subject-Out: 31 subjects train, 1 subject test, lặp lại <strong>32 lần</strong>.</div></div>
+      </div>
+      <div class="question-box" style="margin-top:0.5em;">
+        <div class="question-title">Kiểm soát Data Leakage</div>
+        <strong>Split trước, Normalize sau</strong>: <span class="inline-code">StandardScaler</span> chỉ fit trên Train.
+        Trong LOSO, scaler được <strong>khởi tạo lại mỗi fold</strong> để không lưu phân phối của subject trước.
+      </div>
+      <div class="question-box">
+        <div class="question-title">Xử lý ngoại lệ &amp; Tiêu chí đánh giá</div>
+        Bỏ qua fold có subject chỉ chứa 1 class (VD: Subject 23 — 100% Low Arousal; Subject 26 — chỉ 1 mẫu High Arousal) để tránh sụp đổ mô hình.
+        <strong>F1-macro</strong> là tiêu chí quyết định (Accuracy gây "nghịch lý" khi mất cân bằng nhãn).
+        Class weight động cho <span class="inline-code">CrossEntropyLoss</span>, dùng <strong>raw logits</strong> (không Softmax ở output).
+      </div>
+    </section>
+    </section><!-- /group 1 -->
+
+    <!-- ===== SECTION 2: SVM (nhóm dọc) — Dũng ===== -->
+    <section>
+      <section style="font-size:1em;">
+        <h1><span class="text-light">2.</span><br>Mô hình SVM<br>&amp; cải tiến đặc trưng<br><span class="small-note">— Nguyễn Tiến Dũng</span></h1>
+      </section>
+
+      <!-- 2.1 FEATURE EXTRACTION -->
+      <section style="font-size:0.6em;">
+      <h2>2.1 Chiến lược trích xuất đặc trưng (312 chiều)</h2>
+      <p>SVM không học trực tiếp từ chuỗi thời gian thô → mỗi epoch (32×128) được ánh xạ thành vector đặc trưng trên <strong>4 dải tần</strong> (θ 4–8Hz, α 8–13Hz, β 13–30Hz, γ 30–45Hz), loại bỏ Delta:</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6em;">
+        <div class="card-blue"><div class="card-header">PSD — 128 đặc trưng</div><div class="card-body">Phương pháp <strong>Welch</strong> (nperseg=64, overlap 50%, 3 segments). Lấy <span class="inline-code">log</span> để nén thang đo O(10⁻⁶)–O(1) đồng bộ với DE/Asymmetry. 32×4=128.</div></div>
+        <div class="card-purple"><div class="card-header">DE — 128 đặc trưng</div><div class="card-body">DE = ½ln(2πeσ²), σ² là phương sai sau lọc <strong>Butterworth bậc 5</strong> theo từng dải. Đo độ phức tạp/ngẫu nhiên miền thời gian. 32×4=128.</div></div>
+        <div class="card-orange"><div class="card-header">Asymmetry — 56 đặc trưng</div><div class="card-body">Chênh lệch log-công suất giữa 14 cặp điện cực đối xứng 2 bán cầu: log(P_left) − log(P_right). 14×4=56.</div></div>
+      </div>
+      <div class="question-box" style="margin-top:0.6em;">
+        <div class="question-title">Kỹ thuật làm mượt LDS (Linear Dynamical System)</div>
+        Trạng thái cảm xúc biến đổi <strong>chậm</strong> hơn EEG thô → áp dụng bộ lọc đệ quy
+        <span class="inline-code">x'<sub>t</sub> = α·x<sub>t</sub> + (1−α)·x'<sub>t−1</sub></span>, α = 0.3, áp dụng <strong>sau khi chia train/test</strong>,
+        theo từng đoạn 60-epoch/video (dùng <span class="inline-code">original_indices</span> để nhóm đúng thứ tự trong LOSO).
+      </div>
+    </section>
+
+    <!-- 2.2 CLASSIFIER DESIGN -->
+      <section style="font-size:0.6em;">
+      <h2>2.2 Thiết kế bộ phân loại</h2>
+      <div class="question-box">
+        <div class="question-title">Chuẩn hóa 2 tầng</div>
+        <strong>Tầng 1</strong> (chỉ LOSO): Per-subject Z-score — fit riêng trên train của mỗi subject (và trên chính test set của subject mới, chỉ để khử lệch sinh lý cá nhân, không gây leak nhãn).
+        <strong>Tầng 2</strong>: StandardScaler toàn cục trong Pipeline, fit trên train của mỗi fold.
+      </div>
+      <ul>
+        <li><span class="inline-code">LinearSVC</span>, penalty <strong>L2</strong> — phân bổ đều trọng số, khai thác cả đặc trưng tương quan yếu (tốt hơn L1 khi nhãn lệch).</li>
+        <li><span class="inline-code">class_weight='balanced'</span> — điều chỉnh phạt tỉ lệ nghịch tần suất lớp.</li>
+        <li>Siêu tham số <strong>C</strong> tối ưu qua GridSearch {0.001, 0.01, 0.1, 1.0} + <span class="inline-code">StratifiedKFold</span> 5-fold, seed = 42 + fold_index.</li>
+        <li><strong>Subject-Dependent</strong>: GroupKFold (k=5) chia theo video (60 epoch/video). <strong>Subject-Independent</strong>: LOSO.</li>
+        <li>Đánh giá bằng <strong>Mean ± Std</strong> trên các subject (không pooled accuracy) để tránh subject "dễ" kéo lệch kết quả.</li>
+      </ul>
+      <table class="result-table">
+        <tr><th>Tham số</th><th>Giá trị</th><th>Mô tả</th></tr>
+        <tr><td class="label-cell">Algorithm</td><td>LinearSVC</td><td>Tối ưu cho dữ liệu chiều cao</td></tr>
+        <tr><td class="label-cell">Regularization</td><td>L2</td><td>Phân bổ đều trọng số</td></tr>
+        <tr><td class="label-cell">C</td><td>Grid {0.001…1.0}</td><td>Tối ưu động qua GridSearch</td></tr>
+        <tr><td class="label-cell">LDS α</td><td>0.3</td><td>Áp dụng sau split train/test</td></tr>
+      </table>
+    </section>
+    </section><!-- /group 2 -->
+
+    <!-- ===== SECTION 3: CNN2D & EEGNET (nhóm dọc) — Long ===== -->
+    <section>
+      <section style="font-size:1em;">
+        <h1><span class="text-light">3.</span><br>CNN 2D<br>&amp; cải tiến EEGNet chuyên biệt<br><span class="small-note">— Nguyễn Đức Long</span></h1>
+      </section>
+
+      <!-- 3.1 CNN2D ARCHITECTURE -->
+      <section style="font-size:0.6em;">
+      <h2>3.1 Kiến trúc CNN 2D (baseline)</h2>
+      <p>Mỗi epoch <span class="inline-code">(32,128)</span> → <span class="inline-code">unsqueeze(1)</span> → ảnh xám <span class="inline-code">(1,32,128)</span> (32 kênh × 128 timestep @128Hz).</p>
+      <div class="pipe-row" style="flex-direction:column; align-items:stretch; gap:0.3em;">
+        <div class="pipe-box" style="background:var(--blue);">Block1 (1→16): Conv(1×9) → BN → ReLU → MaxPool(1×2) <span class="small-note" style="color:#eee;">— quét temporal, không trộn kênh</span></div>
+        <div class="pipe-box" style="background:var(--purple);">Block2 (16→32): Conv(3×5) → BN → ReLU → MaxPool(2×2) <span class="small-note" style="color:#eee;">— bắt đầu cross-channel</span></div>
+        <div class="pipe-box" style="background:var(--orange);">Block3 (32→64): Conv(3×3) → BN → ReLU → MaxPool(2×2)</div>
+        <div class="pipe-box" style="background:var(--green);">Block4 (64→128): Conv(3×3) → BN → ReLU (không pool — giữ biên cho GAP)</div>
+        <div class="pipe-box" style="background:var(--gray);">GAP → Dropout(0.5) → Linear(128→64) → Dropout(0.3) → Linear(64→classes)</div>
+      </div>
+      <div class="question-box">
+        <div class="question-title">Khởi tạo trọng số</div>
+        <strong>Kaiming Normal</strong> cho Conv2d &amp; Linear (phù hợp ReLU); <strong>BatchNorm2d</strong> dùng constant init (γ=1, β=0).
+        GAP thay Flatten-FC lớn → giảm mạnh tham số, hạn chế overfitting trên EEG.
+      </div>
+      <table class="result-table">
+        <tr><th>Batch</th><th>LR</th><th>Min/Max LR</th><th>Weight decay</th><th>Dropout</th><th>Grad clip</th><th>Max epoch</th><th>Early stop</th></tr>
+        <tr><td>256</td><td>3e-4</td><td>1e-6 / 1e-2</td><td>1e-4</td><td>0.5 / 0.3</td><td>1.0</td><td>50</td><td>15 (LOSO: 20)</td></tr>
+      </table>
+    </section>
+
+    <!-- 3.2 ADAPTIVE LR SCHEDULER -->
+      <section style="font-size:0.6em;">
+      <h2>3.2 AdaptiveLRScheduler — điều chỉnh LR theo F1-macro</h2>
+      <p>Giám sát xu hướng F1-macro trên validation, áp dụng <strong>3 quy tắc theo thứ tự ưu tiên</strong>:</p>
+      <div class="card-red"><div class="card-header">Rule 2 — Boost (ưu tiên cao nhất)</div><div class="card-body">F1 tụt liên tục ≥ <span class="inline-code">drop_patience</span> (3) epoch → LR ×<span class="inline-code">boost_factor</span> (1.1), không vượt <span class="inline-code">max_lr</span> (1e-2). Reset bộ đếm.</div></div>
+      <div class="card-orange" style="margin-top:0.5em;"><div class="card-header">Rule 1 — Decay khi plateau</div><div class="card-body">F1 không cải thiện sau <span class="inline-code">patience</span> (5) epoch → LR ×<span class="inline-code">decay_factor</span> (0.5), không thấp hơn <span class="inline-code">min_lr</span> (1e-6). Reset bộ đếm.</div></div>
+      <div class="card-green" style="margin-top:0.5em;"><div class="card-header">Rule 3 — Hold</div><div class="card-body">F1 vượt <span class="inline-code">best_f1 + min_delta</span> (1e-4) → reset cả 2 bộ đếm, giữ nguyên LR.</div></div>
+      <div class="question-box" style="margin-top:0.6em;">
+        Cơ chế cho phép vừa giảm LR để hội tụ ổn định khi chững lại, vừa "nhảy" khỏi local minimum khi hiệu suất suy giảm liên tục — phù hợp với EEG có độ nhiễu cao. Dùng chung cho CNN2D &amp; BiLSTM.
+      </div>
+    </section>
+
+    <!-- 3.3 EEGNET CHUYEN BIET -->
+      <section style="font-size:0.6em;">
+      <h2>3.3 EEGNet chuyên biệt — vì sao cần thiết?</h2>
+      <div class="question-box">
+        <div class="question-title">Vấn đề: tỉ lệ N_train / |θ| quá thấp</div>
+        DEAP chỉ có 32×40=1280 epoch. Với K-Fold (k=5), train ≈ 1024 mẫu. CNN2D ban đầu có ~50.000 tham số →
+        <span class="inline-code">N_train/|θ| ≈ 1024/50000 ≈ 0.02</span> → nguy cơ overfitting cao.
+        → Cần kiến trúc chỉ <strong>vài nghìn tham số</strong>.
+      </div>
+      <ul>
+        <li><strong>Block 1 — Temporal Conv</strong>: kernel (1×31) quét thời gian, không trộn kênh, sau đó BatchNorm.</li>
+        <li><strong>Depthwise Conv</strong> (C×1): bộ lọc không gian độc lập cho mỗi feature map → BN → ELU → AvgPool.</li>
+        <li><strong>SE Block</strong> (Squeeze-and-Excitation): attention theo kênh, đặt sau mỗi pooling (Block 1 &amp; 2), trước Dropout.</li>
+        <li><strong>Block 2 — Separable Conv</strong>: Depthwise (1×15) học cross-channel + Pointwise (1×1) kết hợp feature map.</li>
+        <li><strong>MaxNorm Constraint</strong>: giới hạn ‖w‖ ≤ C_max — C_max=1.0 (Depthwise), C_max=0.5 (Linear cuối).</li>
+        <li><strong>Deep Classifier</strong>: Flatten → Linear(64) → BN1d → ELU → Dropout → Linear(classes). Dropout (p=0.5) sau mỗi SE Block.</li>
+      </ul>
+    </section>
+
+    <!-- 3.4 FINE-TUNING 2-PHASE -->
+      <section style="font-size:0.6em;">
+      <h2>3.4 Fine-tuning thích nghi cá nhân cho EEGNet (Two-Phase)</h2>
+      <div class="pipe-row">
+        <div class="pipe-box" style="background:var(--blue);">Phase 1 — Pre-training<br><span class="small-note" style="color:#eee;">LOSO trên 31 subjects</span></div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--orange);">Phase 2 — Fine-tuning<br><span class="small-note" style="color:#eee;">20% calib. set của subject mới</span></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.7em;">
+        <div class="card-blue"><div class="card-header">Phase 1 — Pre-training</div><div class="card-body">Học đặc trưng chung, độc lập cá thể. Thêm <strong>Gaussian noise</strong> (σ=0.01) + <strong>Label Smoothing</strong> (0.1).</div></div>
+        <div class="card-orange"><div class="card-header">Phase 2 — Fine-tuning</div><div class="card-body">Freeze Temporal Conv + Depthwise; chỉ fine-tune các lớp cuối trên 20% data subject mục tiêu. Vẫn dùng Label Smoothing, bỏ noise.</div></div>
+      </div>
+      <div class="question-box" style="margin-top:0.6em;">
+        <div class="question-title">Dynamic Unfreezing & local median /subject </div>
+        Tại <span class="inline-code">unfreeze_epoch</span> xác định ở Phase 2, Block 1 (Temporal Conv, Depthwise) được <strong>mở lại</strong> với LR giảm 10× — cho phép tinh chỉnh nhẹ cả đặc trưng chung theo sinh lý từng subject. Trong mô hình EEGNet có sự thay đổi so với mô hình CNN 2D là dữ liệu đầu vào được làm mượn bằng local median trên mỗi đối tượng thay vì global median để phân chia nhãn đồng đều nhãn có thể trên mỗi người 
+      </div>
+      <div class="diff-good">
+        <div class="diff-title">✓ Kết quả</div>
+        Fine-tuning đạt <strong>F1-macro ≈ 0.5625</strong> — tốt hơn CNN2D khi train LOSO thuần (F1 ≈ 0.5235).
+      </div>
+    </section>
+    </section><!-- /group 3 -->
+
+    <!-- ===== SECTION 4: BILSTM & DUAL-BRANCH FUSION (nhóm dọc) — Dương ===== -->
+    <section>
+      <section style="font-size:1em;">
+        <h1><span class="text-light">4.</span><br>BiLSTM<br>&amp; cải tiến Dual-Branch Fusion<br><span class="small-note">— Phạm Thái Dương</span></h1>
+      </section>
+
+      <!-- 4.1 BILSTM ARCHITECTURE -->
+      <section style="font-size:0.6em;">
+      <h2>4.1 Kiến trúc BiLSTM (baseline)</h2>
+      <p>Input <span class="inline-code">(N,32,128)</span> → permute → <span class="inline-code">(N,128,32)</span>: mỗi timestep là vector 32 chiều (điện thế đồng thời tất cả kênh).</p>
+      <div class="pipe-row">
+        <div class="pipe-box" style="background:var(--blue);">Input<br>(N,128,32)</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--purple);">lstm1<br>hidden=64, BiDir → (N,128,128)</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--orange);">Dropout 0.5</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--green);">lstm2<br>hidden=32, BiDir → (N,128,64)</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--gray);">Dropout 0.5</div>
+      </div>
+      <div class="question-box">
+        <div class="question-title">Trích xuất bất đối xứng (Asymmetric Feature Extraction)</div>
+        Từ output <em>O</em> của lstm2: h<sub>forward</sub> = O[:,−1,:32] (timestep cuối), h<sub>backward</sub> = O[:,0,32:] (timestep đầu) →
+        <span class="inline-code">torch.cat</span> → vector 64 chiều → <strong>Linear Classifier</strong>.
+      </div>
+    </section>
+
+    <!-- 4.2 BILSTM TRAINING SETUP -->
+      <section style="font-size:0.6em;">
+      <h2>4.2 Thiết lập huấn luyện BiLSTM (Exp 3 — LOSO)</h2>
+      <table class="result-table">
+        <tr><th>Hidden (L1/L2)</th><th>Dropout</th><th>Batch</th><th>LR</th><th>Grad clip</th><th>AMP</th><th>Max epoch</th><th>Patience</th></tr>
+        <tr><td>64 / 32</td><td>0.5</td><td>1024</td><td>3e-4 (Adam, wd=1e-4)</td><td>1.0</td><td>FP16</td><td>60</td><td>15</td></tr>
+      </table>
+      <ul>
+        <li>Cùng dùng <strong>AdaptiveLRScheduler</strong> (Boost/Decay/Hold) như CNN2D, theo F1-macro của subject test (LOSO).</li>
+        <li><strong>Dynamic Class Weights</strong> qua <span class="inline-code">get_dynamic_class_weights</span>, max_weight = 5.0, tính riêng mỗi fold LOSO.</li>
+      </ul>
+      <div class="question-box">
+        <div class="question-title">Chuẩn hóa dữ liệu (LOSO)</div>
+        BiLSTM chỉ cần <strong>1 tầng chuẩn hóa per-channel</strong> (mode='channel'), fit chỉ trên train — đơn giản hơn SVM (cần 2 tầng + per-subject Z-score).
+        Cho thấy mạng hồi tiếp tự học được biểu diễn nội tại bất biến với lệch biên độ sinh lý cá nhân.
+      </div>
+    </section>
+
+    <!-- 4.3 PSD/DE FEATURE PIPELINE -->
+      <section style="font-size:0.6em;">
+      <h2>4.3 Cải tiến đường ống đặc trưng: PSD &amp; Differential Entropy</h2>
+      <p>Thay biên độ thô bằng vector <strong>312 chiều</strong> trên 4 dải (θ,α,β,γ) — tương tự SVM: PSD (Welch, log) 128 + DE (Butterworth bậc 5, DE=½ln(2πeσ²)) 128 + Asymmetry (14 cặp điện cực) 56.</p>
+      <div class="question-box">
+        <div class="question-title">2 luồng đặc trưng cho kiến trúc lai (EEGFeatureExtractor)</div>
+        Lọc Butterworth bậc 3 <strong>zero-phase</strong> (<span class="inline-code">filtfilt</span>) trên 5 dải (δ,θ,α,β,γ), sliding window 64/16:
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.7em;">
+        <div class="card-blue"><div class="card-header">X_freq_seq → Nhánh B (BiLSTM)</div><div class="card-body">DE theo cửa sổ trượt (window=64, stride=16) trên 32 kênh × 5 dải → <span class="inline-code">(N, T_seq=5, 160)</span>, T_seq=(128−64)/16+1=5.</div></div>
+        <div class="card-purple"><div class="card-header">X_graph → Nhánh A (DGCNN)</div><div class="card-body">DE toàn epoch trên 5 dải cho mỗi kênh → node feature đồ thị <span class="inline-code">(N, 32, 5)</span>.</div></div>
+      </div>
+      <p class="small-note">DE đã được chứng minh hiệu quả hơn PSD trong nhận diện cảm xúc EEG (Duan et al., 2013). Đặc trưng tần số phản ánh trạng thái dao động ổn định của não, giảm ảnh hưởng SNR thấp.</p>
+    </section>
+
+    <!-- 4.4 DUAL-BRANCH FUSION ARCHITECTURE -->
+      <section style="font-size:0.6em;">
+      <h2>4.4 Kiến trúc lai CNN-BiLSTM Dual-Branch Fusion (DGCNN + BiLSTM)</h2>
+      <div class="pipe-row">
+        <div class="pipe-box" style="background:var(--gray);">Epoch EEG thô<br>(N,32,128)</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--blue);">EEGFeatureExtractor<br>Butterworth bậc 3 + DE (64/16)</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.7em;">
+        <div class="branch-card" style="background:#e0f4f8; border:2px solid var(--blue);">
+          <strong class="text-blue">Nhánh A — DGCNN</strong> · input <span class="inline-code">X_graph (N,32,5)</span><br>
+          Ma trận kề <strong>A học được</strong> (tham số mô hình): A_norm = ReLU(A+Aᵗ)/2 / rowsum(·)<br>
+          GraphConv1 (5→32) ·ELU → GraphConv2 (32→32) ·ELU → MLP (32×32→128→64)<br>
+          → <strong>f_A ∈ R⁶⁴</strong> (biểu diễn không gian)
+        </div>
+        <div class="branch-card" style="background:#ede7f6; border:2px solid var(--purple);">
+          <strong class="text-purple">Nhánh B — BiLSTM</strong> · input <span class="inline-code">X_freq_seq (N,5,160)</span><br>
+          BiLSTM hidden=64, bidirectional → 128<br>
+          Trích trạng thái ẩn: h_fwd[:,-1,:] ‖ h_bwd[:,0,:] → FC+ELU (128→128)<br>
+          → <strong>f_B ∈ R¹²⁸</strong> (biểu diễn thời gian)
+        </div>
+      </div>
+      <div class="pipe-row" style="margin-top:0.6em;">
+        <div class="pipe-box" style="background:var(--blue);">f_A: 64</div>
+        <span class="pipe-arrow">+</span>
+        <div class="pipe-box" style="background:var(--purple);">f_B: 128</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--gray);">Concatenate<br>f_fusion ∈ R¹⁹²</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-box" style="background:var(--green);">Head Valence<br>192→64→ELU→Drop→ŷ_V</div>
+        <div class="pipe-box" style="background:var(--orange);">Head Arousal<br>192→64→ELU→Drop→ŷ_A</div>
+      </div>
+      <div class="question-box">
+        <div class="question-title">Joint Loss &amp; Few-Shot Calibration</div>
+        L_total = L<sup>V</sup><sub>CE</sub> + L<sup>A</sup><sub>CE</sub> + λ·L_sup (λ=1.0, trọng số động cho mỗi nhãn).
+        Few-shot calibration: sau LOSO, <strong>freeze</strong> Nhánh A &amp; B, chỉ <strong>fine-tune Fusion Head + ma trận kề A</strong> trên 20% data subject mục tiêu.
+      </div>
+    </section>
+    </section><!-- /group 4 -->
+
+    <!-- ===== SECTION 5: KET QUA & SO SANH (nhóm dọc) ===== -->
+    <section>
+      <section style="font-size:1em;">
+        <h1><span class="text-light">5.</span><br>Kết quả thực nghiệm<br>&amp; So sánh mô hình</h1>
+      </section>
+
+      <!-- 5.1 EXP1 & EXP2 -->
+      <section style="font-size:0.6em;">
+      <h2>5.1 Kết quả Exp 1 &amp; Exp 2 (Subject-Dependent, 5-Fold CV)</h2>
+      <p><strong>Exp 1 — Phân loại 2 lớp</strong> (Accuracy / F1-macro):</p>
+      <table class="result-table">
+        <tr><th>Mô hình</th><th>Nhãn</th><th>Accuracy</th><th>F1-macro</th></tr>
+        <tr><td class="label-cell">SVM</td><td>Valence</td><td>0.5479 ± 0.0613</td><td>0.4989 ± 0.0541</td></tr>
+        <tr><td class="label-cell">SVM</td><td>Arousal</td><td>0.5667 ± 0.0684</td><td>0.5173 ± 0.0620</td></tr>
+        <tr class="best"><td class="label-cell">CNN 2D</td><td>Valence</td><td>0.6700 ± 0.0033</td><td>0.6691 ± 0.0030</td></tr>
+        <tr><td class="label-cell">BiLSTM</td><td>Valence</td><td>0.6573 ± 0.0036</td><td>0.6571 ± 0.0034</td></tr>
+        <tr><td class="label-cell">BiLSTM</td><td>Arousal</td><td>0.6444 ± 0.0051</td><td>0.6433 ± 0.0057</td></tr>
+      </table>
+      <p><strong>Exp 2 — Phân loại 4 lớp</strong> (V×A → Q1–Q4):</p>
+      <table class="result-table">
+        <tr><th>Mô hình</th><th>Accuracy</th><th>F1-macro</th></tr>
+        <tr><td class="label-cell">SVM</td><td>0.3597 ± 0.0815</td><td>0.2472 ± 0.0454</td></tr>
+        <tr class="best"><td class="label-cell">CNN 2D</td><td>0.4815 ± 0.0031</td><td>0.4701 ± 0.0024</td></tr>
+        <tr><td class="label-cell">BiLSTM</td><td>0.4672 ± 0.0059</td><td>0.4578 ± 0.0056</td></tr>
+      </table>
+    </section>
+
+    <!-- 5.2 EXP3 LOSO -->
+      <section style="font-size:0.6em;">
+      <h2>5.2 Kết quả Exp 3 — Leave-One-Subject-Out (LOSO)</h2>
+      <p>Kịch bản khắt khe nhất — đo khả năng tổng quát hóa thực sự (32 lần lặp, mỗi lần test 1 subject mới):</p>
+      <table class="result-table">
+        <tr><th>Mô hình</th><th>Nhãn</th><th>Accuracy</th><th>F1-macro</th></tr>
+        <tr><td class="label-cell">SVM</td><td>Valence</td><td>0.5208 ± 0.0450</td><td>0.5106 ± 0.0437</td></tr>
+        <tr><td class="label-cell">SVM</td><td>Arousal</td><td>0.5056 ± 0.0729</td><td>0.4935 ± 0.0772</td></tr>
+        <tr class="best"><td class="label-cell">CNN 2D</td><td>Valence</td><td>0.5973 ± 0.0979</td><td>0.5235 ± 0.0673</td></tr>
+        <tr><td class="label-cell">BiLSTM</td><td>Valence</td><td>0.5514 ± 0.0612</td><td>0.5020 ± 0.0367</td></tr>
+        <tr><td class="label-cell">BiLSTM</td><td>Arousal</td><td>0.5456 ± 0.0572</td><td>0.5025 ± 0.0292</td></tr>
+      </table>
+      <div class="diff-bad">
+        <div class="diff-title">✗ Suy giảm rõ rệt so với Exp 1</div>
+        CNN2D: F1-macro <strong>0.669 → 0.524</strong> (Exp1 → Exp3), chênh &gt;14 điểm % — phản ánh inter-subject variability chưa được giải quyết triệt để bằng mô hình đơn lẻ trên dữ liệu thô.
+      </div>
+    </section>
+
+    <!-- 5.3 SO SANH SVM vs DL & CNN vs BILSTM -->
+      <section style="font-size:0.6em;">
+      <h2>5.3 So sánh: SVM vs Deep Learning · CNN2D vs BiLSTM</h2>
+      <div class="diff-bad" style="margin-bottom:0.5em;">
+        <div class="diff-title">SVM (hand-crafted features)</div>
+        Mô hình nhỏ, huấn luyện nhanh, dễ diễn giải, ít overfit trên dữ liệu nhỏ — nhưng phụ thuộc hoàn toàn vào chất lượng feature engineering, không tự học pattern phi tuyến ngoài tập đặc trưng định nghĩa trước.
+      </div>
+      <div class="diff-good" style="margin-bottom:0.5em;">
+        <div class="diff-title">CNN2D / BiLSTM (end-to-end)</div>
+        Tự học biểu diễn từ tín hiệu thô (sau chuẩn hóa), khai thác pattern phức tạp — nhưng nhiều tham số hơn, cần regularization mạnh (Dropout, Weight Decay, Grad Clip, GAP) để hạn chế overfit trên DEAP (32 subjects).
+      </div>
+      <div class="question-box">
+        <div class="question-title">CNN 2D vs BiLSTM — góc nhìn khác biệt</div>
+        <strong>CNN2D</strong>: coi epoch là "ảnh" 2D (32 kênh × 128 timestep), kernel bất đối xứng (1×9),(3×5) học tương quan <strong>không gian–thời gian cục bộ</strong>.
+        <strong>BiLSTM</strong>: xử lý như chuỗi thời gian, học phụ thuộc tuần tự 2 chiều trên toàn epoch — nắm bắt <strong>dynamics dài hạn</strong> mà CNN với receptive field hạn chế khó tiếp cận.
+      </div>
+    </section>
+
+    <!-- 5.4 SUBJECT-DEPENDENT vs LOSO & OVERFITTING -->
+      <section style="font-size:0.6em;">
+      <h2>5.4 Subject-Dependent vs LOSO &amp; Hiện tượng Overfitting</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.7em;">
+        <div class="card-blue"><div class="card-header">Subject-Dependent</div><div class="card-body">GroupKFold theo video, mỗi subject train/test riêng → mô hình học được pattern <em>riêng biệt</em> từng cá nhân → hiệu năng cao nhưng <strong>không phản ánh</strong> khả năng dùng cho người mới.</div></div>
+        <div class="card-orange"><div class="card-header">LOSO</div><div class="card-body">Train N−1 subjects, test subject hoàn toàn mới → phản ánh đúng <strong>cross-subject generalization</strong> — yêu cầu thực tế của EEG-BCI.</div></div>
+      </div>
+      <div class="question-box" style="margin-top:0.6em;">
+        <div class="question-title">Phân tích Overfitting</div>
+        Mô hình DL học trực tiếp biên độ thô <strong>overfit rõ rệt</strong> ở LOSO: Train Loss giảm đều, Val Loss dao động mạnh; Train Acc tăng ổn định trong khi Val Acc dao động/giảm.
+        Phù hợp lý thuyết: SNR thấp + biến thiên cá thể cao → mô hình "học thuộc" nhiễu thay vì pattern cảm xúc bất biến.
+      </div>
+    </section>
+    <section style="font-size:0.6em;">
+  <h2>hình 1</h2>
+  <img src="learning_curves_fold15.png" style="max-height:450px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+  <p></p>
+</section>
+    </section><!-- /group 5 -->
+
+    <!-- ===== HAN CHE ===== -->
+    <section style="font-size:0.55em;">
+      <h2>Hạn chế</h2>
+      <div class="diff-bad" style="margin-bottom:0.45em;">
+        <div class="diff-title">Khoảng cách Subject-Dependent ↔ LOSO còn lớn</div>
+        F1-macro CNN2D giảm hơn 14 điểm % (0.669 → 0.524). Few-shot calibration giúp thu hẹp nhưng chưa đạt mức Subject-Dependent.
+      </div>
+      <div class="diff-bad" style="margin-bottom:0.45em;">
+        <div class="diff-title">Global Median Thresholding chưa hoàn hảo</div>
+        Ngưỡng trung vị toàn cục có thể không khớp phân phối cảm xúc của từng cá nhân (VD: Subject 23 chỉ có 1 nhãn Arousal duy nhất → phải loại khỏi thực nghiệm).
+      </div>
+      <div class="diff-bad" style="margin-bottom:0.45em;">
+        <div class="diff-title">Quy mô dữ liệu nhỏ bất lợi cho Deep Learning</div>
+        ~1280 epoch, N_train/|θ| ≈ 0.02 → CNN2D/BiLSTM dễ overfit dù đã Dropout/BN/Grad Clip. SVM tránh được nhờ feature space 312 chiều có domain knowledge.
+      </div>
+      <div class="diff-bad">
+        <div class="diff-title">Mô hình DL nhạy artifact &amp; chưa kiểm chứng đầy đủ</div>
+        EEG còn dư artifact EMG/EOG sau preprocessing — SVM lọc ngầm qua Butterworth, CNN/BiLSTM học trực tiếp dễ học nhiễu.
+        Do giới hạn thời gian, <strong>CNN-BiLSTM Fusion &amp; EEGNet fine-tuning</strong> chưa có đánh giá định lượng đầy đủ
+      </div>
+    </section>
+
+    <!-- ===== KET LUAN ===== -->
+    <section style="font-size:0.6em;">
+      <h2>Kết luận</h2>
+      <div class="question-box">
+        <div class="question-title">Giai đoạn 1 — Fair Benchmark</div>
+        CNN2D: F1-macro <strong>0.669</strong> (Exp1) → <strong>0.524</strong> (Exp3 LOSO). BiLSTM: <strong>0.657 → 0.502</strong>.
+        SVM thấp hơn ở Exp1 (<strong>0.499</strong>) nhưng <strong>ổn định hơn</strong> ở LOSO (<strong>0.511</strong>) — feature engineering giải quyết hiệu quả SNR thấp &amp; biến thiên cá thể mà DL end-to-end chưa vượt qua trên tập nhỏ.
+      </div>
+      <div class="diff-good">
+        <div class="diff-title">Giả thuyết cốt lõi được xác nhận</div>
+        DL end-to-end không thất bại vì kiến trúc yếu, mà vì 3 điều kiện chưa đáp ứng: dữ liệu chưa đủ sạch, tập huấn luyện chưa đủ lớn, chưa có cơ chế xử lý biến thiên cá thể.
+      </div>
+      <div class="question-box">
+        <div class="question-title">Giai đoạn 2 — Cải tiến</div>
+        Đặc trưng miền tần số (PSD, DE, Asymmetry) giảm ảnh hưởng artifact/SNR thấp · <strong>CNN-BiLSTM Dual-Branch Fusion</strong> (DGCNN không gian + BiLSTM thời gian) · <strong>EEGNet chuyên biệt</strong> (vài nghìn tham số) + fine-tuning 2 pha → F1 ≈ 0.5625.
+      </div>
+      <div class="question-box">
+        <div class="question-title">Hướng phát triển</div>
+        Euclidean Alignment toàn pipeline · tích hợp topology điện cực chuẩn 10-20 vào đồ thị DGCNN · mở rộng sang bộ dữ liệu SEED &amp; MAHNOB-HCI.
+      </div>
+    </section>
+
+    <!-- ===== PHAN CONG CONG VIEC ===== -->
+    <section style="font-size:0.6em;">
+      <h2>Phân chia công việc nhóm</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.8em;">
+        <div class="card-blue">
+          <div class="card-header">Nguyễn Đức Long</div>
+          <div class="card-body">
+            • Tìm bài báo nền tảng cho chủ đề chung của nhóm<br>
+            • Xây dựng mô hình <strong>CNN 2D</strong><br>
+            • Cải tiến bằng <strong>EEGNet</strong> chuyên biệt (SE Attention, MaxNorm, fine-tuning 2 pha)
+          </div>
+        </div>
+        <div class="card-purple">
+          <div class="card-header">Phạm Thái Dương</div>
+          <div class="card-body">
+            • <strong>Tiền xử lý dữ liệu</strong> (band-pass, baseline, epoching, chuẩn hóa)<br>
+            • Xây dựng mô hình <strong>BiLSTM</strong><br>
+            • Cải tiến kiến trúc lai <strong>CNN-BiLSTM Dual-Branch Fusion</strong> (DGCNN + BiLSTM)
+          </div>
+        </div>
+        <div class="card-orange">
+          <div class="card-header">Nguyễn Tiến Dũng</div>
+          <div class="card-body">
+            • Xây dựng mô hình <strong>SVM</strong><br>
+            • Cải tiến đặc trưng (PSD, DE, Asymmetry, LDS smoothing)<br>
+            • Hỗ trợ cải tiến cho 2 thành viên còn lại
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== KET THUC ===== -->
+    <section style="font-size:0.6em;">
+      <h1>Cảm ơn thầy/cô và các bạn đã theo dõi!</h1>
+      <p style="margin-top:1em;">Q&amp;A</p>
+    </section>
+
+  </div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/highlight.min.js"></script>
+<script>
+  Reveal.initialize({
+    width: 960,
+    height: 700,
+    margin: 0.04,
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    plugins: [ RevealHighlight ]
+  });
+</script>
+</body>
+</html>

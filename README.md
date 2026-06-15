@@ -277,7 +277,6 @@ Báo cáo này trình bày một hệ thống phân loại cảm xúc từ tín 
 │       ├── svm_exp2_4class.py  ← Đánh giá SVM phân loại 4 lớp
 │       ├── svm_exp3_loso.py    ← Đánh giá SVM trên kịch bản LOSO
 │       └── svm_utils.py        ← Các hàm tiện ích trích xuất và visualize riêng cho SVM
-├── models/                 ← Thư mục ở root level (hiện dùng để chứa cache)
 ├── src/
 │   ├── data_pipeline/      
 │   │   ├── load_raw.py         ← Tải dữ liệu thô
@@ -291,7 +290,6 @@ Báo cáo này trình bày một hệ thống phân loại cảm xúc từ tín 
 │   │   ├── eeg_bilstm.py       ← Kiến trúc BiLSTM
 │   │   └── eegnet.py           ← Kiến trúc EEGNet
 │   └── utils/              ← Các hàm tính metric, vẽ biểu đồ hỗ trợ
-├── utils/                  ← Thư mục tiện ích ở root level (hiện chứa cache)
 ├── result/
 │   └── svm/                ← Lưu trữ kết quả thực nghiệm của SVM
 │   |   ├── logs/           ← Log kết quả metrics (JSON), danh sách features (TXT)

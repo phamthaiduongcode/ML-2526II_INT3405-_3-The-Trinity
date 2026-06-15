@@ -2,7 +2,7 @@
 
 > **Dự án nghiên cứu, tiền xử lý dữ liệu và đánh giá hiệu năng của các mô hình học máy (SVM) và học sâu (CNN 2D, BiLSTM, EEGNet) trên tập dữ liệu chuỗi thời gian/tín hiệu sinh học.**
 > 
-> **Môn học:** Bài tập lớn môn Học máy  
+> **Môn học:** Học máy ML-2526II_INT3405
 > **Trường:** Đại học Công nghệ, ĐHQGHN  
 
 | Tên | MSSV | Vai trò chính |
@@ -114,8 +114,8 @@ graph TD
 
 **Bước 1: Clone repository**
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+git https://github.com/phamthaiduongcode/ML-2526II_INT3405-_3-The-Trinity
+cd  ML-2526II_INT3405-_3-The-Trinity  
 ```
 
 **Bước 2: Cài đặt môi trường và các thư viện cần thiết**
@@ -284,8 +284,6 @@ Báo cáo này trình bày một hệ thống phân loại cảm xúc từ tín 
 │   ├── logs/               ← Log kết quả JSON, TXT
 │   ├── plots/              ← Biểu đồ Confusion Matrix, t-SNE
 │   └── checkpoints/        ← Trọng số mô hình (weights)
-├── calc_metrics.py         ← Script hỗ trợ tính toán chỉ số
-├── calc_4class.py          ← Script hỗ trợ tính toán cho bài toán 4 lớp
 ├── requirements.txt        ← Danh sách thư viện cần thiết
 └── README.md               ← File thông tin dự án
 ```
@@ -301,8 +299,3 @@ Nếu bạn muốn đóng góp cải thiện hiệu năng cho các mô hình tro
 4. Push các thay đổi lên: `git push origin feature/model-name`.
 5. Tạo một **Pull Request** mô tả chi tiết phương pháp tiếp cận và kết quả cải thiện (benchmark lại với bảng kết quả).
 
----
-
-## 13. License
-
-Dự án này được phân phối dưới giấy phép MIT. Xem chi tiết tại file `LICENSE`.

@@ -30,11 +30,10 @@
 - [6. Cấu trúc dữ liệu đầu vào](#6-cấu-trúc-dữ-liệu-đầu-vào)
 - [7. Chi tiết các mô hình](#7-chi-tiết-các-mô-hình)
 - [8. Đánh giá hiệu năng](#8-đánh-giá-hiệu-năng)
-- [9. Kết luận & Cải tiến](#9-kết-luận--cải-tiến)
+- [9. Kết luận & Định hướng phát triển](#9-kết-luận--định-hướng-phát-triển)
 - [10. Tham khảo (References)](#10-tham-khảo-references)
 - [11. Cấu trúc thư mục](#11-cấu-trúc-thư-mục)
 - [12. Hướng dẫn đóng góp (Contributing)](#12-hướng-dẫn-đóng-góp-contributing)
-- [13. License](#13-license)
 
 ---
 
@@ -114,7 +113,7 @@ graph TD
 
 **Bước 1: Clone repository**
 ```bash
-git https://github.com/phamthaiduongcode/ML-2526II_INT3405-_3-The-Trinity
+git clone https://github.com/phamthaiduongcode/ML-2526II_INT3405-_3-The-Trinity
 cd  ML-2526II_INT3405-_3-The-Trinity  
 ```
 
@@ -256,15 +255,24 @@ Báo cáo này trình bày một hệ thống phân loại cảm xúc từ tín 
 
 ```text
 ├── data/
-│   ├── raw/                ← Dữ liệu gốc
-│   └── processed/          ← Dữ liệu đã được tiền xử lý
-├── experiments/
+│   ├── raw/                ← Dữ liệu tín hiệu gốc (định dạng .edf, .csv...)
+│   └── processed/          ← Dữ liệu đã qua lọc nhiễu, chuẩn hóa, chia tập train/val/test
+├── experiments/            ← Các kịch bản thử nghiệm và huấn luyện cho từng loại mô hình
 │   ├── bilstm/             
-│   │   ├── exp4_loso_fusion.py ← Script chạy LOSO fusion
-│   │   ├── run_tsne.py         ← Vẽ biểu đồ t-SNE
-│   │   └── ...                 ← Các script thử nghiệm BiLSTM khác
-│   ├── cnn/                ← Các script huấn luyện mô hình CNN / EEGNet
-│   └── svm/                ← Các script đánh giá và huấn luyện SVM
+│   │   ├── exp1_2class.py      ← Phân loại 2 lớp (Valence/Arousal)
+│   │   ├── exp2_4class.py      ← Phân loại 4 lớp cảm xúc
+│   │   ├── exp3_loso.py        ← Thực nghiệm Leave-One-Subject-Out (LOSO)
+│   │   ├── exp4_loso_fusion.py ← Thử nghiệm kiến trúc lai CNN-BiLSTM (Fusion)
+│   │   └── run_tsne.py         ← Vẽ biểu đồ t-SNE trực quan hóa đặc trưng
+│   ├── cnn/                
+│   │   ├── train_engine.py             ← Script cấu hình và luồng huấn luyện chính
+│   │   ├── train_EEGNet_fine-tuning.py ← Kịch bản Fine-tuning chuyên biệt cho EEGNet
+│   │   └── trainexp1.py, trainexp2.py..← Các script thử nghiệm CNN/EEGNet theo kịch bản
+│   └── svm/                
+│       ├── svm_exp1_2class.py  ← Đánh giá SVM phân loại 2 lớp
+│       ├── svm_exp2_4class.py  ← Đánh giá SVM phân loại 4 lớp
+│       ├── svm_exp3_loso.py    ← Đánh giá SVM trên kịch bản LOSO
+│       └── svm_utils.py        ← Các hàm tiện ích trích xuất và visualize riêng cho SVM
 ├── models/                 ← Thư mục ở root level (hiện dùng để chứa cache)
 ├── src/
 │   ├── data_pipeline/      
@@ -281,9 +289,9 @@ Báo cáo này trình bày một hệ thống phân loại cảm xúc từ tín 
 │   └── utils/              ← Các hàm tính metric, vẽ biểu đồ hỗ trợ
 ├── utils/                  ← Thư mục tiện ích ở root level (hiện chứa cache)
 ├── result/
-│   ├── logs/               ← Log kết quả JSON, TXT
-│   ├── plots/              ← Biểu đồ Confusion Matrix, t-SNE
-│   └── checkpoints/        ← Trọng số mô hình (weights)
+│   └── svm/                ← Lưu trữ kết quả thực nghiệm của SVM
+│       ├── logs/           ← Log kết quả metrics (JSON), danh sách features (TXT)
+│       └── plots/          ← Biểu đồ Confusion Matrix, đường ROC...
 ├── requirements.txt        ← Danh sách thư viện cần thiết
 └── README.md               ← File thông tin dự án
 ```

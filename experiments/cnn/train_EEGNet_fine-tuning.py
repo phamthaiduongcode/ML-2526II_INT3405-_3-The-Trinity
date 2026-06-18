@@ -40,6 +40,9 @@ P1_VAL_RATIO = 0.10
 # ==============================================================================
 # ADAPTIVE LR SCHEDULER
 # ==============================================================================
+
+# tính toán  tự động giảm hoặc tăng learning rate 
+
 class AdaptiveLRScheduler:
     def __init__(self, optimizer, patience=5, decay_factor=0.5,
                  drop_patience=3, boost_factor=1.1,

@@ -153,7 +153,7 @@ class EEGnet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.depthwise(x)
-        x = self.bn2(x)
+        x = self.bn2(x) 
         x = self.elu1(x)
         x = self.pool1(x)
         x = self.se1(x)         # SE attention nhìn feature map đầy đủ

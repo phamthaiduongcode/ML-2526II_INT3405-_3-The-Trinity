@@ -210,19 +210,19 @@
     <!-- ===== 3. DAT VAN DE ===== -->
     <section style="font-size:0.6em;">
       <h2>0.1 Đặt vấn đề</h2>
-      <div class="question-box">
+      <div class="question-box" style="font-size: 0.65em;">
         <div class="question-title">Bài toán</div>
         Phân loại cảm xúc theo mô hình không gian 2 chiều của <strong>Russell</strong>:
         <span class="text-blue">Valence</span> (mức độ dễ chịu: tiêu cực ↔ tích cực) và
         <span class="text-purple">Arousal</span> (mức độ kích động: bình tĩnh ↔ phấn khích), dựa trên tín hiệu <strong>EEG</strong> — nguồn tín hiệu sinh lý khách quan nhất, khó che giấu hơn biểu cảm,giọng nói,hành động.
       </div>
       <p><strong>3 thách thức cốt lõi:</strong></p>
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6em;">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6em; font-size: 0.65em;">
         <div class="card-red"><div class="card-header">Low SNR</div><div class="card-body">Biên độ EEG cỡ µV, dễ bị lẫn lộn bởi nhiễu EOG/EMG/ECG &amp; cần nhiều nhiễu kỹ thuật.</div></div>
         <div class="card-orange"><div class="card-header">Cross-subject variability</div><div class="card-body">Cấu trúc hộp sọ &amp; phản ứng cảm xúc khác biệt giữa các cá thể → khó để đưa ra tổng quát hóa chung cho tất cả mọi người .</div></div>
         <div class="card-purple"><div class="card-header">Đa chiều phức tạp</div><div class="card-body">EEG vừa có đặc trưng <strong>không gian</strong> (điện cực) vừa có <strong>chuỗi thời gian</strong>.</div></div>
       </div>
-      <div class="question-box" style="margin-top:0.6em;">
+      <div class="question-box" style="font-size: 0.65;">
         <div class="question-title">Chiến lược nghiên cứu 2 giai đoạn</div>
         <strong>Giai đoạn 1</strong>: so sánh công bằng (Fair Benchmark) SVM / CNN2D / BiLSTM trên cùng pipeline với dữ liệu thô →
         <strong>Giai đoạn 2</strong> (đóng góp cốt lõi): trích xuất đặc trưng miền tần số (PSD, DE) làm đầu vào cho kiến trúc lai <strong>CNN-BiLSTM Dual-Branch Fusion</strong> và <strong>EEGNet chuyên biệt</strong>.
@@ -354,12 +354,12 @@
       <!-- 3.1 CNN2D ARCHITECTURE -->
       <section style="font-size:0.6em;">
       <h2>3.1 Kiến trúc CNN 2D (baseline)</h2>
-      <p>Mỗi epoch <span class="inline-code">(32,128)</span> → <span class="inline-code">unsqueeze(1)</span> → ảnh xám <span class="inline-code">(1,32,128)</span> (32 kênh × 128 timestep @128Hz).</p>
+      <p>Mỗi epoch <span class="inline-code">(32,128)</span> → <span class="inline-code">unsqueeze(1)</span> → ảnh<span class="inline-code">(1,32,128)</span> (32 kênh × 128 timestep 128Hz).</p>
       <div class="pipe-row" style="flex-direction:column; align-items:stretch; gap:0.3em;">
-        <div class="pipe-box" style="background:var(--blue);">Block1 (1→16): Conv(1×9) → BN → ReLU → MaxPool(1×2) <span class="small-note" style="color:#eee;">— quét temporal, không trộn kênh</span></div>
-        <div class="pipe-box" style="background:var(--purple);">Block2 (16→32): Conv(3×5) → BN → ReLU → MaxPool(2×2) <span class="small-note" style="color:#eee;">— bắt đầu cross-channel</span></div>
+        <div class="pipe-box" style="background:var(--blue);">Block1 (1→16): Conv(1×9) → BN → ReLU → MaxPool(1×2) <span class="small-note" style="color:#eee;">— quét theo chiều thời gian , không trộn kênh</span></div>
+        <div class="pipe-box" style="background:var(--purple);">Block2 (16→32): Conv(3×5) → BN → ReLU → MaxPool(2×2) <span class="small-note" style="color:#eee;"></span></div>
         <div class="pipe-box" style="background:var(--orange);">Block3 (32→64): Conv(3×3) → BN → ReLU → MaxPool(2×2)</div>
-        <div class="pipe-box" style="background:var(--green);">Block4 (64→128): Conv(3×3) → BN → ReLU (không pool — giữ biên cho GAP)</div>
+        <div class="pipe-box" style="background:var(--green);">Block4 (64→128): Conv(3×3) → BN → ReLU (không giảm chiều  — giữ biên cho GAP)</div>
         <div class="pipe-box" style="background:var(--gray);">GAP → Dropout(0.5) → Linear(128→64) → Dropout(0.3) → Linear(64→classes)</div>
       </div>
       <div class="question-box">
